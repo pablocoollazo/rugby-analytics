@@ -77,6 +77,21 @@ export async function getStats(matchId) {
     return snap.exists() ? snap.data() : null;
 }
 
+//PLAYBOOK
+export async function createPlay(clubId, playData) {
+    return addDoc(collection(db, "playbook"), { ...playData, clubId, createdIn: new Date() });
+}
+
+export async function getClubPlaybook(clubId) {
+    const q = query(collection(db, "playbook"), where("clubId", "==", clubId));
+    const snap = await getDocs(q);
+    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+export async function deletePlay(playId) {
+    await deleteDoc(doc(db, "playbook", playId));
+}
+
 //ROLES
 export async function updateMemberRole(clubId, targetUserId, newRole) {
   await updateDoc(doc(db, "clubs", clubId), {
