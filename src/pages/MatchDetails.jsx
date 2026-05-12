@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getClubPlayers, getStats, setStats } from "../utils/firestore";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import SquadSection from "../components/matchStats/SquadSection";
 import ScrumSection from "../components/matchStats/ScrumSection";
 import LineoutSection from "../components/matchStats/LineoutSection";
 import RuckSection from "../components/matchStats/RuckSection";
@@ -19,7 +20,7 @@ export default function MatchDetails() {
     const { club, role } = useAuth();
     const navigate = useNavigate();
     const [match, setMatch] = useState(null);
-    const [players, setPlayers] = useState([]);
+    const [allPlayers, setAllPlayers] = useState([]);
     const [stats, setStatsState] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -32,7 +33,7 @@ export default function MatchDetails() {
             const matchSnap = await getDoc(doc(db, "matches", id));
             setMatch({ id: matchSnap.id, ...matchSnap.data() });
             const clubPlayers = await getClubPlayers(club.clubId);
-            setPlayers(clubPlayers);
+            setAllPlayers(clubPlayers);
             const existingStats = await getStats(id);
             if (existingStats) {
                 setStatsState(existingStats);
@@ -50,18 +51,19 @@ export default function MatchDetails() {
         const pf = Number(pointsFor);
         const pa = Number(pointsAgainst);
         const result = pf > pa ? "Win" : pf < pa ? "Loss" : "Draw";
-        await setStats(id, {
-            ...stats,
-            pointsFor: pf,
-            pointsAgainst: pa,
-            result,
-        });
+        await setStats(id, { ...stats, pointsFor: pf, pointsAgainst: pa, result });
         setStatsState(prev => ({ ...prev, pointsFor: pf, pointsAgainst: pa, result }));
         setSaving(false);
     }
 
     const canEdit = role === "admin" || role === "coach";
-    const sharedProps = { stats, setStatsState, matchId: id, canEdit, players };
+
+    // All stat sections receive only squad players; fall back to all if squad not set yet
+    const squadPlayers = stats?.squad?.length > 0
+        ? allPlayers.filter(p => stats.squad.includes(p.id))
+        : allPlayers;
+
+    const sharedProps = { stats, setStatsState, matchId: id, canEdit, players: squadPlayers };
 
     if (loading) return <p>Loading...</p>;
 
@@ -72,6 +74,16 @@ export default function MatchDetails() {
                 <button onClick={() => navigate("/matches")}>Back</button>
             </div>
             <p>{match?.date} · {match?.location}</p>
+
+            <Section title="Squad">
+                <SquadSection
+                    stats={stats}
+                    setStatsState={setStatsState}
+                    matchId={id}
+                    canEdit={canEdit}
+                    allPlayers={allPlayers}
+                />
+            </Section>
 
             <Section title="Result">
                 {stats?.result && (
