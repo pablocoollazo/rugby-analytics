@@ -29,6 +29,8 @@ export default function Players() {
   const [mainPosition, setMainPosition] = useState(ALL_POSITIONS[0]);
   const [altPositions, setAltPositions] = useState([]);
   const [age, setAge] = useState("");
+  const [isThrower, setIsThrower] = useState(false);
+  const [isKicker, setIsKicker] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -59,7 +61,9 @@ export default function Players() {
       displayName: nickname || name,
       mainPosition,
       altPositions,
-      age: Number(age)
+      age: Number(age),
+      isThrower,
+      isKicker,
     });
     const updated = await getClubPlayers(club.clubId);
     setPlayers(updated);
@@ -69,6 +73,8 @@ export default function Players() {
     setMainPosition(ALL_POSITIONS[0]);
     setAltPositions([]);
     setAge("");
+    setIsThrower(false);
+    setIsKicker(false);
     setShowForm(false);
     setSaving(false);
   }
@@ -158,6 +164,17 @@ export default function Players() {
             <input type="number" value={age} onChange={e => setAge(e.target.value)} required />
           </div>
 
+          <div style={{ marginTop: 12, display: "flex", gap: 20 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input type="checkbox" checked={isThrower} onChange={e => setIsThrower(e.target.checked)} />
+              Thrower
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input type="checkbox" checked={isKicker} onChange={e => setIsKicker(e.target.checked)} />
+              Kicker
+            </label>
+          </div>
+
           <button type="submit" disabled={saving} style={{ marginTop: 12 }}>
             {saving ? "Saving..." : "Save player"}
           </button>
@@ -181,6 +198,12 @@ export default function Players() {
               )}
               <br />
               <small>Age: {p.age}</small>
+              {(p.isThrower || p.isKicker) && (
+                <div style={{ marginTop: 4, display: "flex", gap: 6 }}>
+                  {p.isThrower && <small style={{ background: "#dbeafe", padding: "1px 6px", borderRadius: 10 }}>Thrower</small>}
+                  {p.isKicker && <small style={{ background: "#dcfce7", padding: "1px 6px", borderRadius: 10 }}>Kicker</small>}
+                </div>
+              )}
               {canEdit && (
                 <button
                   onClick={() => handleDelete(p.id)}
