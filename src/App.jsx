@@ -8,10 +8,18 @@ import Matches from "./pages/Matches";
 import Analysis from "./pages/Analysis";
 import MatchDetails from "./pages/MatchDetails";
 import Playbook from "./pages/Playbook";
+import ClubMembers from "./pages/ClubMembers";
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
   return user ? children : <Navigate to="/login" />;
+}
+
+function AdminRoute({ children }) {
+  const { user, role, clubLoading } = useAuth();
+  if (!user) return <Navigate to="/login" />;
+  if (clubLoading) return null;
+  return role === "admin" ? children : <Navigate to="/" />;
 }
 
 export default function App() {
@@ -25,6 +33,7 @@ export default function App() {
       <Route path="/matches/:id" element={<PrivateRoute><MatchDetails /></PrivateRoute>} />
       <Route path="/analysis" element={<PrivateRoute><Analysis /></PrivateRoute>} />
       <Route path="/playbook" element={<PrivateRoute><Playbook /></PrivateRoute>} />
+      <Route path="/club" element={<AdminRoute><ClubMembers /></AdminRoute>} />
     </Routes>
   );
 }

@@ -4,7 +4,7 @@ import {
 } from "firebase/firestore";
 
 //CLUBS
-export async function createClub(name, userId) {
+export async function createClub(name, userId, email) {
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
   const clubRef = doc(collection(db, "clubs"));
   await setDoc(clubRef, {
@@ -14,21 +14,44 @@ export async function createClub(name, userId) {
     members: { [userId]: "admin" },
     createdIn: new Date()
   });
-  await setDoc(doc(db, "users", userId), { clubId: clubRef.id, role: "admin" });
+  await setDoc(doc(db, "users", userId), { clubId: clubRef.id, role: "admin", email });
   return { clubId: clubRef.id, code };
 }
 
-export async function joinClub(code, userId) {
+export async function joinClub(code, userId, email, role = "coach") {
   const q = query(collection(db, "clubs"), where("code", "==", code));
   const snap = await getDocs(q);
   if (snap.empty) throw new Error("Club not found");
   const clubDoc = snap.docs[0];
   const currentMembers = clubDoc.data().members;
   await updateDoc(doc(db, "clubs", clubDoc.id), {
-    members: { ...currentMembers, [userId]: "member" }
+    members: { ...currentMembers, [userId]: role }
   });
-  await setDoc(doc(db, "users", userId), { clubId: clubDoc.id, role: "member" });
+  await setDoc(doc(db, "users", userId), { clubId: clubDoc.id, role, email });
   return clubDoc.id;
+}
+
+export async function getClubMembersDetails(members) {
+  const uids = Object.keys(members);
+  const details = await Promise.all(
+    uids.map(async (uid) => {
+      const snap = await getDoc(doc(db, "users", uid));
+      return { uid, role: members[uid], email: snap.exists() ? (snap.data().email || uid) : uid };
+    })
+  );
+  return details;
+}
+
+export async function linkPlayerToUser(playerId, userId) {
+  await updateDoc(doc(db, "players", playerId), { userId });
+}
+
+export async function getUnlinkedPlayers(clubId) {
+  const q = query(collection(db, "players"), where("clubId", "==", clubId));
+  const snap = await getDocs(q);
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(p => !p.userId);
 }
 
 export async function getUserClub(userId) {

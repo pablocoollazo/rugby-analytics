@@ -28,7 +28,7 @@ export default function Players() {
   const [nickname, setNickname] = useState("");
   const [mainPosition, setMainPosition] = useState(ALL_POSITIONS[0]);
   const [altPositions, setAltPositions] = useState([]);
-  const [age, setAge] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [isThrower, setIsThrower] = useState(false);
   const [isKicker, setIsKicker] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -61,7 +61,7 @@ export default function Players() {
       displayName: nickname || name,
       mainPosition,
       altPositions,
-      age: Number(age),
+      dateOfBirth,
       isThrower,
       isKicker,
     });
@@ -72,7 +72,7 @@ export default function Players() {
     setNickname("");
     setMainPosition(ALL_POSITIONS[0]);
     setAltPositions([]);
-    setAge("");
+    setDateOfBirth("");
     setIsThrower(false);
     setIsKicker(false);
     setShowForm(false);
@@ -160,8 +160,8 @@ export default function Players() {
           </div>
 
           <div style={{ marginTop: 12 }}>
-            <label>Age</label>
-            <input type="number" value={age} onChange={e => setAge(e.target.value)} required />
+            <label>Date of birth</label>
+            <input type="date" value={dateOfBirth} onChange={e => setDateOfBirth(e.target.value)} required />
           </div>
 
           <div style={{ marginTop: 12, display: "flex", gap: 20 }}>
@@ -197,7 +197,7 @@ export default function Players() {
                 <small>Also plays: {p.altPositions.join(", ")}</small>
               )}
               <br />
-              <small>Age: {p.age}</small>
+              <small>DOB: {p.dateOfBirth ? new Date(p.dateOfBirth).toLocaleDateString("en-GB") : p.age ?? "—"}</small>
               {(p.isThrower || p.isKicker) && (
                 <div style={{ marginTop: 4, display: "flex", gap: 6 }}>
                   {p.isThrower && <small style={{ background: "#dbeafe", padding: "1px 6px", borderRadius: 10 }}>Thrower</small>}
