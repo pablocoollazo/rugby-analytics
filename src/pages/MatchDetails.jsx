@@ -86,10 +86,12 @@ export default function MatchDetails() {
         });
     }, [squad, eventStats.subs]);
 
-    // Use effectiveSquad player IDs so substituted players are included in dropdowns
     const effectivePlayerIds = effectiveSquad.map(s => s.playerId);
-    const squadPlayers = effectivePlayerIds.length > 0 ? allPlayers.filter(p => effectivePlayerIds.includes(p.id)) : allPlayers;
-    const sharedProps = { stats: eventStats, events, addEvent, deleteEvent, canEdit, players: squadPlayers, squad: effectiveSquad };
+    // Include players who have events but are no longer on the field (substituted off)
+    const eventPlayerIds = [...new Set(events.filter(e => e.playerId).map(e => e.playerId))];
+    const allMatchPlayerIds = [...new Set([...effectivePlayerIds, ...eventPlayerIds])];
+    const matchPlayers = allMatchPlayerIds.length > 0 ? allPlayers.filter(p => allMatchPlayerIds.includes(p.id)) : allPlayers;
+    const sharedProps = { stats: eventStats, events, addEvent, deleteEvent, canEdit, players: matchPlayers, squad: effectiveSquad };
 
     if (loading) return <p>Loading...</p>;
 

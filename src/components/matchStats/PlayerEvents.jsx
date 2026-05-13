@@ -10,7 +10,12 @@ export default function PlayerEvents({ stats, events, addEvent, deleteEvent, can
 
     if (!players?.length) return <p style={{ color: "#999" }}>No players in squad.</p>;
 
+    const onFieldIds = new Set((squad || []).map(s => s.playerId));
+    const onField = players.filter(p => onFieldIds.has(p.id));
+    const offField = players.filter(p => !onFieldIds.has(p.id));
+
     const selectedPlayer = players.find(p => p.id === selectedId) || null;
+    const selectedIsOnField = onFieldIds.has(selectedId);
 
     function select(id) {
         setSelectedId(prev => prev === id ? null : id);
@@ -58,10 +63,11 @@ export default function PlayerEvents({ stats, events, addEvent, deleteEvent, can
 
     return (
         <div>
-            {/* Player grid */}
+            {/* On-field players grid */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {players.map(p => {
+                {onField.map(p => {
                     const isSelected = selectedId === p.id;
+                    const entry = squad.find(s => s.playerId === p.id);
                     return (
                         <div key={p.id}
                             onClick={() => canEdit ? select(p.id) : null}
@@ -74,29 +80,74 @@ export default function PlayerEvents({ stats, events, addEvent, deleteEvent, can
                                 userSelect: "none",
                             }}
                         >
-                            {(() => {
-                                const entry = squad.find(s => s.playerId === p.id);
-                                return (
-                                    <>
-                                        <div style={{ fontWeight: 600, fontSize: 14 }}>
-                                            {entry?.jersey ? <span style={{ opacity: 0.7, marginRight: 5 }}>#{entry.jersey}</span> : null}
-                                            {p.displayName}
-                                        </div>
-                                        <div style={{ fontSize: 11, opacity: 0.7, marginTop: 1 }}>
-                                            {entry?.position || p.mainPosition}
-                                            {entry && !entry.isStarter ? " · Sub" : ""}
-                                        </div>
-                                    </>
-                                );
-                            })()}
+                            <div style={{ fontWeight: 600, fontSize: 14 }}>
+                                {entry?.jersey ? <span style={{ opacity: 0.7, marginRight: 5 }}>#{entry.jersey}</span> : null}
+                                {p.displayName}
+                            </div>
+                            <div style={{ fontSize: 11, opacity: 0.7, marginTop: 1 }}>
+                                {entry?.position || p.mainPosition}
+                            </div>
                             <div style={{ fontSize: 11, marginTop: 4, opacity: 0.85 }}>{summaryLabel(p)}</div>
                         </div>
                     );
                 })}
             </div>
 
+            {/* Off-field players (substituted out) — undo only */}
+            {offField.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                    <small style={{ color: "#888", fontWeight: 600 }}>FUERA DEL CAMPO</small>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 6 }}>
+                        {offField.map(p => {
+                            const isSelected = selectedId === p.id;
+                            return (
+                                <div key={p.id}
+                                    onClick={() => select(p.id)}
+                                    style={{
+                                        padding: "10px 12px",
+                                        background: isSelected ? "#6b7280" : "#d1d5db",
+                                        color: isSelected ? "#fff" : "#555",
+                                        borderRadius: 8,
+                                        cursor: "pointer",
+                                        userSelect: "none",
+                                        opacity: 0.85,
+                                    }}
+                                >
+                                    <div style={{ fontWeight: 600, fontSize: 14 }}>{p.displayName}</div>
+                                    <div style={{ fontSize: 11, marginTop: 4 }}>{summaryLabel(p)}</div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Undo-only panel for off-field players */}
+            {selectedPlayer && !selectedIsOnField && (
+                <div style={{ marginTop: 10, padding: "14px 16px", background: "#f3f4f6", borderRadius: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                        <strong>{selectedPlayer.displayName}</strong>
+                        <button type="button" onClick={() => setSelectedId(null)}
+                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#555" }}>✕</button>
+                    </div>
+                    <small style={{ color: "#888" }}>Fuera del campo — solo se pueden deshacer eventos.</small>
+                    {recentEvents.length > 0 && (
+                        <div style={{ marginTop: 10 }}>
+                            {recentEvents.map(ev => (
+                                <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                                    <span style={{ fontSize: 13, flex: 1 }}>{formatEventLabel(ev)}</span>
+                                    <button type="button" onClick={() => deleteEvent(ev.id)}
+                                        style={{ fontSize: 11, padding: "2px 8px" }}>✕</button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {recentEvents.length === 0 && <p style={{ fontSize: 13, color: "#aaa", marginTop: 6 }}>Sin eventos recientes.</p>}
+                </div>
+            )}
+
             {/* Action panel for selected player */}
-            {selectedPlayer && canEdit && (
+            {selectedPlayer && canEdit && selectedIsOnField && (
                 <div style={{ marginTop: 10, padding: "14px 16px", background: "#dbeafe", borderRadius: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                         <strong>{selectedPlayer.displayName}</strong>
