@@ -106,9 +106,15 @@ export default function PlaysSection({ stats, addEvent, deleteEvent, canEdit, pl
                                                 style={{ flex: 1, fontSize: 13 }}
                                             >
                                                 <option value="">— none —</option>
-                                                {players?.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.displayName}</option>
-                                                ))}
+                                                {players?.map(p => {
+                                                    const usedElsewhere = Object.entries(playersByJersey)
+                                                        .some(([slot, pid]) => String(slot) !== String(n) && pid === p.id);
+                                                    return (
+                                                        <option key={p.id} value={p.id} disabled={usedElsewhere}>
+                                                            {p.displayName}{usedElsewhere ? " (ya asignado)" : ""}
+                                                        </option>
+                                                    );
+                                                })}
                                             </select>
                                         </div>
                                     ))}
