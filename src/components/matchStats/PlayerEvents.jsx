@@ -23,6 +23,12 @@ export default function PlayerEvents({ stats, events, addEvent, deleteEvent, can
     const selectedPlayer = players.find(p => p.id === selectedId) || null;
     const selectedIsOnField = onFieldIds.has(selectedId);
 
+    function addWithPosition(data) {
+        const entry = squad.find(s => s.playerId === data.playerId);
+        const position = JERSEY_POSITION[Number(entry?.jersey)] || entry?.position || null;
+        return addEvent(position ? { ...data, position } : data);
+    }
+
     function select(id) {
         setSelectedId(prev => prev === id ? null : id);
         setTryForm({ fromPlay: false, minute: "" });
@@ -31,7 +37,7 @@ export default function PlayerEvents({ stats, events, addEvent, deleteEvent, can
     }
 
     async function addTry() {
-        await addEvent({
+        await addWithPosition({
             type: "try",
             playerId: selectedId,
             fromPlay: tryForm.fromPlay,
@@ -42,7 +48,7 @@ export default function PlayerEvents({ stats, events, addEvent, deleteEvent, can
 
     async function addPlayKick() {
         if (!kickForm.distance) return;
-        await addEvent({ type: "play_kick", playerId: selectedId, rating: kickForm.rating, distance: Number(kickForm.distance) });
+        await addWithPosition({ type: "play_kick", playerId: selectedId, rating: kickForm.rating, distance: Number(kickForm.distance) });
         setKickForm({ rating: "good", distance: "" });
     }
 
@@ -171,7 +177,7 @@ export default function PlayerEvents({ stats, events, addEvent, deleteEvent, can
                                 { type: "tackle_missed", label: "Missed", color: "#d97706" },
                             ].map(({ type, label, color }) => (
                                 <button key={type} type="button"
-                                    onClick={() => addEvent({ type, playerId: selectedId })}
+                                    onClick={() => addWithPosition({ type, playerId: selectedId })}
                                     style={{ flex: 1, padding: "10px 0", background: color, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
                                     {label}
                                 </button>
@@ -206,7 +212,7 @@ export default function PlayerEvents({ stats, events, addEvent, deleteEvent, can
                                 style={{ fontSize: 13, flex: 1 }}>
                                 {PENALTY_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
                             </select>
-                            <button type="button" onClick={() => addEvent({ type: "penalty", playerId: selectedId, reason: penaltyReason })}
+                            <button type="button" onClick={() => addWithPosition({ type: "penalty", playerId: selectedId, reason: penaltyReason })}
                                 style={{ padding: "8px 16px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
                                 + Add
                             </button>
@@ -237,11 +243,11 @@ export default function PlayerEvents({ stats, events, addEvent, deleteEvent, can
                         <div style={{ marginBottom: selectedPlayer.isThrower ? 12 : 0 }}>
                             <small style={{ color: "#1e40af", fontWeight: 700, letterSpacing: 0.5 }}>KICK AT GOAL</small>
                             <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                                <button type="button" onClick={() => addEvent({ type: "kick_at_goal_made", playerId: selectedId })}
+                                <button type="button" onClick={() => addWithPosition({ type: "kick_at_goal_made", playerId: selectedId })}
                                     style={{ flex: 1, padding: "10px 0", background: "#16a34a", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
                                     Made
                                 </button>
-                                <button type="button" onClick={() => addEvent({ type: "kick_at_goal_missed", playerId: selectedId })}
+                                <button type="button" onClick={() => addWithPosition({ type: "kick_at_goal_missed", playerId: selectedId })}
                                     style={{ flex: 1, padding: "10px 0", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
                                     Missed
                                 </button>
@@ -254,7 +260,7 @@ export default function PlayerEvents({ stats, events, addEvent, deleteEvent, can
                         <div>
                             <small style={{ color: "#1e40af", fontWeight: 700, letterSpacing: 0.5 }}>LINEOUT</small>
                             <div style={{ marginTop: 6 }}>
-                                <button type="button" onClick={() => addEvent({ type: "lineout_error", playerId: selectedId })}
+                                <button type="button" onClick={() => addWithPosition({ type: "lineout_error", playerId: selectedId })}
                                     style={{ padding: "8px 16px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
                                     + Throwing error
                                 </button>
