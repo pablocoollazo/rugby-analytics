@@ -4,11 +4,11 @@ import { getClubPlaybook } from "../../utils/firestore";
 
 const RESULTS = ["try", "penalty", "turnover", "other"];
 
-export default function PlaysSection({ stats, addEvent, deleteEvent, canEdit, players }) {
+export default function PlaysSection({ stats, addEvent, deleteEvent, canEdit, players, squad = [] }) {
     const { club } = useAuth();
     const [playbook, setPlaybook] = useState([]);
     const [selectedPlay, setSelectedPlay] = useState(null);
-    const [activePlayers, setActivePlayers] = useState([]);
+    const [playersByPosition, setPlayersByPosition] = useState({});
     const [result, setResult] = useState("try");
 
     useEffect(() => {
@@ -17,14 +17,23 @@ export default function PlaysSection({ stats, addEvent, deleteEvent, canEdit, pl
 
     const plays = stats?.plays || [];
 
+    function playerAtPosition(position) {
+        const entry = squad.find(s => s.position === position);
+        return entry?.playerId || "";
+    }
+
     function handlePlaySelect(playId) {
         const play = playbook.find(p => p.id === playId) || null;
         setSelectedPlay(play);
-        setActivePlayers(play?.playerIds || []);
-    }
-
-    function togglePlayer(id) {
-        setActivePlayers(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+        if (play?.positions) {
+            const prefilled = {};
+            play.positions.forEach(pos => {
+                prefilled[pos] = playerAtPosition(pos);
+            });
+            setPlayersByPosition(prefilled);
+        } else {
+            setPlayersByPosition({});
+        }
     }
 
     async function handleAdd(e) {
@@ -34,42 +43,49 @@ export default function PlaysSection({ stats, addEvent, deleteEvent, canEdit, pl
             type: "play",
             playbookId: selectedPlay.id,
             name: selectedPlay.name,
-            playerIds: activePlayers,
+            playersByPosition,
             result,
         });
         setSelectedPlay(null);
-        setActivePlayers([]);
+        setPlayersByPosition({});
         setResult("try");
     }
 
-    function playerName(id) {
-        return players?.find(p => p.id === id)?.displayName || id;
+    function describePlay(play) {
+        if (!play.playersByPosition) return null;
+        return Object.entries(play.playersByPosition).map(([pos, pid]) => {
+            const p = players?.find(pl => pl.id === pid);
+            return `${pos}: ${p?.displayName || "—"}`;
+        }).join(", ");
     }
 
     return (
         <div>
             {plays.length === 0 && <p style={{ color: "#999" }}>No plays recorded yet.</p>}
             {plays.map(play => (
-                <div key={play.id} style={{ background: "#eee", padding: "8px 12px", borderRadius: 6, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div key={play.id} className="card"
+                    style={{ background: "#eee", padding: "8px 12px", borderRadius: 6, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>
                         <strong>{play.name}</strong>
                         <span style={{ marginLeft: 8, fontSize: 13, color: "#555" }}>{play.result}</span>
-                        {play.playerIds?.length > 0 && (
-                            <p style={{ margin: "4px 0 0", fontSize: 12, color: "#777" }}>{play.playerIds.map(playerName).join(", ")}</p>
+                        {describePlay(play) && (
+                            <p style={{ margin: "4px 0 0", fontSize: 12, color: "#777" }}>{describePlay(play)}</p>
                         )}
                     </div>
                     {canEdit && (
-                        <button type="button" onClick={() => deleteEvent(play.id)} style={{ fontSize: 11, padding: "2px 6px" }}>✕</button>
+                        <button type="button" onClick={() => deleteEvent(play.id)}
+                            style={{ fontSize: 11, padding: "2px 6px", marginLeft: 8 }}>✕</button>
                     )}
                 </div>
             ))}
+
             {canEdit && (
                 <form onSubmit={handleAdd} style={{ marginTop: 12 }}>
                     {playbook.length === 0 ? (
-                        <p style={{ fontSize: 13, color: "#999" }}>No plays in the playbook. Add some in the <a href="/playbook">Playbook</a> page.</p>
+                        <p style={{ fontSize: 13, color: "#999" }}>No plays in the playbook.</p>
                     ) : (
                         <>
-                            <div style={{ marginBottom: 8 }}>
+                            <div style={{ marginBottom: 10 }}>
                                 <label>Play</label>
                                 <select
                                     value={selectedPlay?.id || ""}
@@ -83,25 +99,36 @@ export default function PlaysSection({ stats, addEvent, deleteEvent, canEdit, pl
                                     ))}
                                 </select>
                             </div>
-                            {selectedPlay && players?.length > 0 && (
-                                <div style={{ marginBottom: 8 }}>
-                                    <label>Players involved</label>
-                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
-                                        {players.map(p => (
-                                            <label key={p.id} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}>
-                                                <input type="checkbox" checked={activePlayers.includes(p.id)} onChange={() => togglePlayer(p.id)} />
-                                                {p.displayName}
-                                            </label>
-                                        ))}
-                                    </div>
+
+                            {selectedPlay?.positions?.length > 0 && (
+                                <div style={{ marginBottom: 10 }}>
+                                    <label style={{ display: "block", marginBottom: 6 }}>Players</label>
+                                    {selectedPlay.positions.map(pos => (
+                                        <div key={pos} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                                            <span style={{ fontSize: 13, width: 120, flexShrink: 0, color: "#555" }}>{pos}</span>
+                                            <select
+                                                value={playersByPosition[pos] || ""}
+                                                onChange={e => setPlayersByPosition(prev => ({ ...prev, [pos]: e.target.value }))}
+                                                style={{ flex: 1, fontSize: 13 }}
+                                            >
+                                                <option value="">— none —</option>
+                                                {players?.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.displayName}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
-                            <div style={{ marginBottom: 8 }}>
+
+                            <div style={{ marginBottom: 10 }}>
                                 <label>Result</label>
-                                <select value={result} onChange={e => setResult(e.target.value)} style={{ display: "block", marginTop: 4 }}>
+                                <select value={result} onChange={e => setResult(e.target.value)}
+                                    style={{ display: "block", marginTop: 4 }}>
                                     {RESULTS.map(r => <option key={r} value={r}>{r}</option>)}
                                 </select>
                             </div>
+
                             <button type="submit" disabled={!selectedPlay}>Add Play</button>
                         </>
                     )}
