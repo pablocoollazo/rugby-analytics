@@ -8,7 +8,7 @@ const JERSEY_POSITION = {
     11: "Wing", 12: "Inside Center", 13: "Outside Center", 14: "Wing", 15: "Full-back",
 };
 
-export default function PlayerEvents({ stats, events, addEvent, deleteEvent, canEdit, players, squad = [] }) {
+export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, players, squad = [] }) {
     const [selectedId, setSelectedId] = useState(null);
     const [tryForm, setTryForm] = useState({ fromPlay: false, minute: "" });
     const [penaltyReason, setPenaltyReason] = useState("scrum");
@@ -53,19 +53,41 @@ export default function PlayerEvents({ stats, events, addEvent, deleteEvent, can
     }
 
     function summaryLabel(p) {
-        const ps = stats?.playerStats?.[p.id] || {};
-        const tries = (stats?.tries || []).filter(t => t.playerId === p.id).length;
-        const pens = (ps.penalties || []).length;
-        const tw = ps.tacklesWon || 0;
-        const tl = ps.tacklesLost || 0;
-        const tm = ps.tacklesMissed || 0;
-        const kg = ps.kicksAtGoal;
-        const parts = [];
-        if (tw + tl + tm > 0) parts.push(`T ${tw}/${tl}/${tm}`);
-        if (tries > 0) parts.push(`${tries} try`);
-        if (pens > 0) parts.push(`${pens} pen`);
-        if (kg?.attempts > 0) parts.push(`${kg.successful}/${kg.attempts} kicks`);
-        return parts.join(" · ") || "—";
+        const playerEvents = (events || []).filter(e => e.playerId === p.id);
+
+        // Group events by position
+        const byPos = {};
+        playerEvents.forEach(ev => {
+            const pos = ev.position || "?";
+            if (!byPos[pos]) byPos[pos] = { tw: 0, tl: 0, tm: 0, tries: 0, pens: 0, kMade: 0, kTotal: 0 };
+            const s = byPos[pos];
+            if (ev.type === "tackle_won")          s.tw++;
+            if (ev.type === "tackle_lost")          s.tl++;
+            if (ev.type === "tackle_missed")        s.tm++;
+            if (ev.type === "try")                  s.tries++;
+            if (ev.type === "penalty")              s.pens++;
+            if (ev.type === "kick_at_goal_made")    { s.kMade++; s.kTotal++; }
+            if (ev.type === "kick_at_goal_missed")  s.kTotal++;
+        });
+
+        const positions = Object.keys(byPos);
+        if (positions.length === 0) return "—";
+
+        function posStats(s) {
+            const parts = [];
+            if (s.tw + s.tl + s.tm > 0) parts.push(`T ${s.tw}/${s.tl}/${s.tm}`);
+            if (s.tries > 0)            parts.push(`${s.tries} try`);
+            if (s.pens > 0)             parts.push(`${s.pens} pen`);
+            if (s.kTotal > 0)           parts.push(`${s.kMade}/${s.kTotal} kicks`);
+            return parts.join(" · ");
+        }
+
+        if (positions.length === 1) return posStats(byPos[positions[0]]) || "—";
+
+        return positions
+            .map(pos => { const s = posStats(byPos[pos]); return s ? `${pos}: ${s}` : null; })
+            .filter(Boolean)
+            .join("  |  ") || "—";
     }
 
     const recentEvents = (events || [])
