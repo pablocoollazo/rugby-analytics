@@ -97,64 +97,37 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
 
     return (
         <div>
-            {/* On-field players grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {onField.map(p => {
-                    const isSelected = selectedId === p.id;
-                    const entry = squad.find(s => s.playerId === p.id);
-                    return (
-                        <div key={p.id}
-                            onClick={() => canEdit ? select(p.id) : null}
-                            style={{
-                                padding: "10px 12px",
-                                background: isSelected ? "#1d4ed8" : "#e8e8e8",
-                                color: isSelected ? "#fff" : "#000",
-                                borderRadius: 8,
-                                cursor: canEdit ? "pointer" : "default",
-                                userSelect: "none",
-                            }}
-                        >
-                            <div style={{ fontWeight: 600, fontSize: 14 }}>
-                                {entry?.jersey ? <span style={{ opacity: 0.7, marginRight: 5 }}>#{entry.jersey}</span> : null}
-                                {p.displayName}
-                            </div>
-                            <div style={{ fontSize: 11, opacity: 0.7, marginTop: 1 }}>
-                                {JERSEY_POSITION[Number(entry?.jersey)] || entry?.position || p.mainPosition}
-                            </div>
-                            <div style={{ fontSize: 11, marginTop: 4, opacity: 0.85 }}>{summaryLabel(p)}</div>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Off-field players (substituted out) — undo only */}
-            {offField.length > 0 && (
-                <div style={{ marginTop: 12 }}>
-                    <small style={{ color: "#888", fontWeight: 600 }}>FUERA DEL CAMPO</small>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 6 }}>
+            <select
+                value={selectedId || ""}
+                onChange={e => e.target.value ? select(e.target.value) : setSelectedId(null)}
+                style={{ width: "100%", fontSize: 14, marginBottom: selectedPlayer ? 10 : 0 }}
+            >
+                <option value="">— Seleccionar jugador —</option>
+                <optgroup label="En el campo">
+                    {onField.map(p => {
+                        const entry = squad.find(s => s.playerId === p.id);
+                        const pos = JERSEY_POSITION[Number(entry?.jersey)] || entry?.position || p.mainPosition;
+                        const label = summaryLabel(p);
+                        return (
+                            <option key={p.id} value={p.id}>
+                                {entry?.jersey ? `#${entry.jersey} ` : ""}{p.displayName} — {pos}{label !== "—" ? ` (${label})` : ""}
+                            </option>
+                        );
+                    })}
+                </optgroup>
+                {offField.length > 0 && (
+                    <optgroup label="Fuera del campo">
                         {offField.map(p => {
-                            const isSelected = selectedId === p.id;
+                            const label = summaryLabel(p);
                             return (
-                                <div key={p.id}
-                                    onClick={() => select(p.id)}
-                                    style={{
-                                        padding: "10px 12px",
-                                        background: isSelected ? "#6b7280" : "#d1d5db",
-                                        color: isSelected ? "#fff" : "#555",
-                                        borderRadius: 8,
-                                        cursor: "pointer",
-                                        userSelect: "none",
-                                        opacity: 0.85,
-                                    }}
-                                >
-                                    <div style={{ fontWeight: 600, fontSize: 14 }}>{p.displayName}</div>
-                                    <div style={{ fontSize: 11, marginTop: 4 }}>{summaryLabel(p)}</div>
-                                </div>
+                                <option key={p.id} value={p.id}>
+                                    {p.displayName}{label !== "—" ? ` (${label})` : ""}
+                                </option>
                             );
                         })}
-                    </div>
-                </div>
-            )}
+                    </optgroup>
+                )}
+            </select>
 
             {/* Undo-only panel for off-field players */}
             {selectedPlayer && !selectedIsOnField && (
