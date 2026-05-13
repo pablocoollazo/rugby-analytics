@@ -1,55 +1,68 @@
 import { useState } from "react";
 
-const JERSEYS = Array.from({ length: 15 }, (_, i) => i + 1);
-
 export default function SubstitutionSection({ stats, addEvent, deleteEvent, canEdit, allPlayers, squad }) {
+    const [recording, setRecording] = useState(false);
     const [minute, setMinute] = useState("");
-    const [rows, setRows] = useState([{ jersey: "", playerId: "" }]);
+    // draft: { [jersey]: playerId } — only jerseys the coach actually changed
+    const [draft, setDraft] = useState({});
 
     const subs = stats?.subs || [];
 
-    function addRow() {
-        setRows(prev => [...prev, { jersey: "", playerId: "" }]);
+    // Build current jersey→player map from squad prop (already has subs applied)
+    const currentMap = {};
+    (squad || []).forEach(s => { if (s.jersey !== "" && s.jersey != null) currentMap[String(s.jersey)] = s.playerId; });
+    const sortedJerseys = Object.keys(currentMap).sort((a, b) => Number(a) - Number(b));
+
+    function playerName(id) {
+        const p = allPlayers?.find(pl => pl.id === id);
+        return p?.displayName || "—";
     }
 
-    function updateRow(i, field, value) {
-        setRows(prev => prev.map((r, idx) => idx === i ? { ...r, [field]: value } : r));
-    }
-
-    function removeRow(i) {
-        setRows(prev => prev.filter((_, idx) => idx !== i));
-    }
-
-    async function handleAdd(e) {
-        e.preventDefault();
-        const changes = {};
-        for (const row of rows) {
-            if (row.jersey !== "") changes[String(row.jersey)] = row.playerId;
-        }
-        if (Object.keys(changes).length === 0) return;
-        await addEvent({ type: "sub", minute: minute ? Number(minute) : null, changes });
+    function openRecording() {
+        setDraft({});
         setMinute("");
-        setRows([{ jersey: "", playerId: "" }]);
+        setRecording(true);
     }
 
-    function describeChange(jersey, playerId, allPlayers) {
-        if (!playerId) return `#${jersey} → (baja)`;
-        const p = allPlayers?.find(pl => pl.id === playerId);
-        return `#${jersey} → ${p?.displayName || "—"}`;
+    function setChange(jersey, playerId) {
+        setDraft(prev => ({ ...prev, [jersey]: playerId }));
+    }
+
+    async function handleSave() {
+        const changes = {};
+        Object.entries(draft).forEach(([jersey, playerId]) => {
+            // Only include jerseys that actually changed
+            if (String(playerId) !== String(currentMap[jersey] || "")) {
+                changes[jersey] = playerId;
+            }
+        });
+        if (Object.keys(changes).length === 0) { setRecording(false); return; }
+        await addEvent({ type: "sub", minute: minute ? Number(minute) : null, changes });
+        setRecording(false);
+        setDraft({});
+        setMinute("");
+    }
+
+    function describeChange(jersey, playerId) {
+        const prev = currentMap[jersey];
+        const prevName = prev ? playerName(prev) : "(vacío)";
+        const newName = playerId ? playerName(playerId) : "(baja)";
+        return `#${jersey}: ${prevName} → ${newName}`;
     }
 
     return (
         <div>
-            {subs.length === 0 && <p style={{ color: "#999" }}>No substitutions recorded.</p>}
+            {subs.length === 0 && !recording && <p style={{ color: "#999" }}>No substitutions recorded.</p>}
+
             {subs.map(sub => (
                 <div key={sub.id} className="card"
                     style={{ background: "#eee", padding: "8px 12px", borderRadius: 6, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>
-                        {sub.minute && <small style={{ color: "#555" }}>Min. {sub.minute} — </small>}
+                        {sub.minute != null && <small style={{ color: "#555" }}>Min. {sub.minute} — </small>}
                         <span style={{ fontSize: 13 }}>
-                            {Object.entries(sub.changes || {}).map(([j, pid]) =>
-                                describeChange(j, pid, allPlayers)
-                            ).join(" · ")}
+                            {Object.entries(sub.changes || {}).map(([j, pid], i) => (
+                                <span key={j}>{i > 0 ? " · " : ""}{pid ? playerName(pid) : "(baja)"} #{j}</span>
+                            ))}
                         </span>
                     </div>
                     {canEdit && (
@@ -59,40 +72,66 @@ export default function SubstitutionSection({ stats, addEvent, deleteEvent, canE
                 </div>
             ))}
 
-            {canEdit && (
-                <form onSubmit={handleAdd} style={{ marginTop: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                        <label style={{ whiteSpace: "nowrap" }}>Min.</label>
+            {canEdit && !recording && (
+                <button type="button" onClick={openRecording} style={{ marginTop: 8 }}>
+                    + Registrar cambio
+                </button>
+            )}
+
+            {canEdit && recording && (
+                <div style={{ marginTop: 12, padding: "14px 16px", background: "#f0fdf4", borderRadius: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                        <strong>Nuevo cambio</strong>
+                        <button type="button" onClick={() => setRecording(false)}
+                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#555" }}>✕</button>
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                        <label style={{ whiteSpace: "nowrap", fontSize: 13 }}>Minuto (opt.)</label>
                         <input type="number" value={minute} onChange={e => setMinute(e.target.value)}
-                            min="1" max="80" style={{ width: 60, fontSize: 13 }} placeholder="opt." />
+                            min="1" max="80" style={{ width: 60, fontSize: 13 }} />
                     </div>
 
-                    {rows.map((row, i) => (
-                        <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "center" }}>
-                            <select value={row.jersey} onChange={e => updateRow(i, "jersey", e.target.value)}
-                                style={{ width: 70, fontSize: 13 }}>
-                                <option value="">Dorsal</option>
-                                {JERSEYS.map(n => <option key={n} value={n}>#{n}</option>)}
-                            </select>
-                            <select value={row.playerId} onChange={e => updateRow(i, "playerId", e.target.value)}
-                                style={{ flex: 1, fontSize: 13 }}>
-                                <option value="">— baja —</option>
-                                {allPlayers?.map(p => (
-                                    <option key={p.id} value={p.id}>{p.displayName}</option>
-                                ))}
-                            </select>
-                            {rows.length > 1 && (
-                                <button type="button" onClick={() => removeRow(i)}
-                                    style={{ fontSize: 11, padding: "2px 6px" }}>✕</button>
-                            )}
+                    {sortedJerseys.length === 0 && (
+                        <p style={{ fontSize: 13, color: "#999" }}>Define la convocatoria primero.</p>
+                    )}
+
+                    {sortedJerseys.map(jersey => {
+                        const currentPlayerId = currentMap[jersey];
+                        const draftPlayerId = draft[jersey] !== undefined ? draft[jersey] : currentPlayerId;
+                        const changed = draft[jersey] !== undefined && String(draft[jersey]) !== String(currentPlayerId);
+                        return (
+                            <div key={jersey} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                                <span style={{ fontWeight: 700, width: 32, flexShrink: 0, fontSize: 13 }}>#{jersey}</span>
+                                <select
+                                    value={draftPlayerId || ""}
+                                    onChange={e => setChange(jersey, e.target.value)}
+                                    style={{ flex: 1, fontSize: 13, background: changed ? "#dcfce7" : "#fff" }}
+                                >
+                                    <option value="">(baja — sale del campo)</option>
+                                    {allPlayers?.map(p => (
+                                        <option key={p.id} value={p.id}>{p.displayName}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        );
+                    })}
+
+                    <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+                        <button type="button" onClick={handleSave}>Guardar cambio</button>
+                        <button type="button" onClick={() => setRecording(false)}
+                            style={{ background: "none" }}>Cancelar</button>
+                    </div>
+
+                    {Object.entries(draft).filter(([j, pid]) => String(pid) !== String(currentMap[j] || "")).length > 0 && (
+                        <div style={{ marginTop: 10, fontSize: 12, color: "#555" }}>
+                            {Object.entries(draft)
+                                .filter(([j, pid]) => String(pid) !== String(currentMap[j] || ""))
+                                .map(([j, pid]) => <div key={j}>{describeChange(j, pid)}</div>)
+                            }
                         </div>
-                    ))}
-
-                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                        <button type="button" onClick={addRow} style={{ fontSize: 13 }}>+ fila</button>
-                        <button type="submit">Guardar cambio</button>
-                    </div>
-                </form>
+                    )}
+                </div>
             )}
         </div>
     );

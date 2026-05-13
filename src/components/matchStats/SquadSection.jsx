@@ -5,6 +5,14 @@ const ALL_POSITIONS = [
     "Scrum-half", "Fly-half", "Inside Centre", "Outside Centre", "Wing", "Fullback"
 ];
 
+const JERSEY_POSITION = {
+    1: "Prop", 2: "Hooker", 3: "Prop",
+    4: "Lock", 5: "Lock",
+    6: "Flanker", 7: "Flanker", 8: "Number 8",
+    9: "Scrum-half", 10: "Fly-half",
+    11: "Wing", 12: "Inside Centre", 13: "Outside Centre", 14: "Wing", 15: "Fullback",
+};
+
 export default function SquadSection({ squad, allPlayers, canEdit, onSave }) {
     // squad: [{ playerId, jersey, position, isStarter }]
     const [entries, setEntries] = useState(() => {
@@ -29,7 +37,14 @@ export default function SquadSection({ squad, allPlayers, canEdit, onSave }) {
     }
 
     function update(playerId, field, value) {
-        setEntries(prev => ({ ...prev, [playerId]: { ...prev[playerId], [field]: value } }));
+        setEntries(prev => {
+            const updated = { ...prev[playerId], [field]: value };
+            if (field === "jersey") {
+                const autoPos = JERSEY_POSITION[Number(value)];
+                if (autoPos) updated.position = autoPos;
+            }
+            return { ...prev, [playerId]: updated };
+        });
     }
 
     async function handleSave(e) {

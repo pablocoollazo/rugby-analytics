@@ -86,8 +86,9 @@ export default function MatchDetails() {
         });
     }, [squad, eventStats.subs]);
 
-    const squadPlayerIds = squad.map(s => s.playerId);
-    const squadPlayers = squadPlayerIds.length > 0 ? allPlayers.filter(p => squadPlayerIds.includes(p.id)) : allPlayers;
+    // Use effectiveSquad player IDs so substituted players are included in dropdowns
+    const effectivePlayerIds = effectiveSquad.map(s => s.playerId);
+    const squadPlayers = effectivePlayerIds.length > 0 ? allPlayers.filter(p => effectivePlayerIds.includes(p.id)) : allPlayers;
     const sharedProps = { stats: eventStats, events, addEvent, deleteEvent, canEdit, players: squadPlayers, squad: effectiveSquad };
 
     if (loading) return <p>Loading...</p>;
