@@ -1,5 +1,13 @@
 import { useState } from "react";
 
+const JERSEY_POSITION = {
+    1: "Prop L", 2: "Hooker", 3: "Prop R",
+    4: "Lock", 5: "Lock",
+    6: "Flanker", 7: "Flanker", 8: "N8",
+    9: "SH", 10: "FH",
+    11: "Wing", 12: "IC", 13: "OC", 14: "Wing", 15: "FB",
+};
+
 export default function SubstitutionSection({ stats, addEvent, deleteEvent, canEdit, allPlayers, squad }) {
     const [recording, setRecording] = useState(false);
     const [minute, setMinute] = useState("");
@@ -102,7 +110,9 @@ export default function SubstitutionSection({ stats, addEvent, deleteEvent, canE
                         const changed = draft[jersey] !== undefined && String(draft[jersey]) !== String(currentPlayerId);
                         return (
                             <div key={jersey} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                                <span style={{ fontWeight: 700, width: 32, flexShrink: 0, fontSize: 13 }}>#{jersey}</span>
+                                <span style={{ fontWeight: 700, width: 70, flexShrink: 0, fontSize: 13 }}>
+                                    #{jersey} <span style={{ fontWeight: 400, color: "#888" }}>{JERSEY_POSITION[Number(jersey)] || ""}</span>
+                                </span>
                                 <select
                                     value={draftPlayerId || ""}
                                     onChange={e => setChange(jersey, e.target.value)}
