@@ -2,6 +2,12 @@ import { useState } from "react";
 
 const PENALTY_REASONS = ["scrum", "ruck", "offside", "knock-on", "illegal tackle", "other"];
 
+const JERSEY_POSITION = {
+    1: "Prop Left", 2: "Hooker", 3: "Prop Right", 4: "Lock", 5: "Lock",
+    6: "Flanker", 7: "Flanker", 8: "Number 8", 9: "Scrum Half", 10: "Fly-half",
+    11: "Wing", 12: "Inside Center", 13: "Outside Center", 14: "Wing", 15: "Full-back",
+};
+
 export default function PlayerEvents({ stats, events, addEvent, deleteEvent, canEdit, players, squad = [] }) {
     const [selectedId, setSelectedId] = useState(null);
     const [tryForm, setTryForm] = useState({ fromPlay: false, minute: "" });
@@ -85,7 +91,7 @@ export default function PlayerEvents({ stats, events, addEvent, deleteEvent, can
                                 {p.displayName}
                             </div>
                             <div style={{ fontSize: 11, opacity: 0.7, marginTop: 1 }}>
-                                {entry?.position || p.mainPosition}
+                                {JERSEY_POSITION[Number(entry?.jersey)] || entry?.position || p.mainPosition}
                             </div>
                             <div style={{ fontSize: 11, marginTop: 4, opacity: 0.85 }}>{summaryLabel(p)}</div>
                         </div>
