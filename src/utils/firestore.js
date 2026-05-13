@@ -1,6 +1,7 @@
 import { db } from "../firebase";
-import { 
-    doc, setDoc, getDoc, collection, addDoc, getDocs, query, where, updateDoc, deleteDoc
+import {
+    doc, setDoc, getDoc, collection, addDoc, getDocs, query, where, updateDoc, deleteDoc,
+    serverTimestamp, orderBy, onSnapshot
 } from "firebase/firestore";
 
 //CLUBS
@@ -113,6 +114,28 @@ export async function getClubPlaybook(clubId) {
 
 export async function deletePlay(playId) {
     await deleteDoc(doc(db, "playbook", playId));
+}
+
+//MATCH EVENTS
+export async function addMatchEvent(matchId, data) {
+  return addDoc(collection(db, "matches", matchId, "events"), {
+    ...data,
+    timestamp: serverTimestamp(),
+  });
+}
+
+export async function deleteMatchEvent(matchId, eventId) {
+  await deleteDoc(doc(db, "matches", matchId, "events", eventId));
+}
+
+export function subscribeToMatchEvents(matchId, callback) {
+  const q = query(
+    collection(db, "matches", matchId, "events"),
+    orderBy("timestamp", "asc")
+  );
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  });
 }
 
 //ROLES

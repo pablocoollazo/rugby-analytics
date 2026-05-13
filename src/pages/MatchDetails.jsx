@@ -4,16 +4,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getClubPlayers, getStats, setStats } from "../utils/firestore";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { useMatchEvents } from "../hooks/useMatchEvents";
 import SquadSection from "../components/matchStats/SquadSection";
 import ScrumSection from "../components/matchStats/ScrumSection";
 import LineoutSection from "../components/matchStats/LineoutSection";
 import RuckSection from "../components/matchStats/RuckSection";
-import TackleSection from "../components/matchStats/TackleSection";
-import KickSection from "../components/matchStats/KickSection";
-import PlayKickSection from "../components/matchStats/PlayKickSection";
-import PenaltySection from "../components/matchStats/PenaltySection";
+import PlayerEvents from "../components/matchStats/PlayerEvents";
 import PlaysSection from "../components/matchStats/PlaysSection";
-import TrySection from "../components/matchStats/TrySection";
 
 export default function MatchDetails() {
     const { id } = useParams();
@@ -21,12 +18,13 @@ export default function MatchDetails() {
     const navigate = useNavigate();
     const [match, setMatch] = useState(null);
     const [allPlayers, setAllPlayers] = useState([]);
-    const [stats, setStatsState] = useState(null);
+    const [docStats, setDocStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-
     const [pointsFor, setPointsFor] = useState("");
     const [pointsAgainst, setPointsAgainst] = useState("");
+
+    const { stats: eventStats, events, addEvent, deleteEvent } = useMatchEvents(id);
 
     useEffect(() => {
         async function load() {
@@ -34,11 +32,11 @@ export default function MatchDetails() {
             setMatch({ id: matchSnap.id, ...matchSnap.data() });
             const clubPlayers = await getClubPlayers(club.clubId);
             setAllPlayers(clubPlayers);
-            const existingStats = await getStats(id);
-            if (existingStats) {
-                setStatsState(existingStats);
-                setPointsFor(existingStats.pointsFor || "");
-                setPointsAgainst(existingStats.pointsAgainst || "");
+            const existing = await getStats(id);
+            if (existing) {
+                setDocStats(existing);
+                setPointsFor(existing.pointsFor || "");
+                setPointsAgainst(existing.pointsAgainst || "");
             }
             setLoading(false);
         }
@@ -51,19 +49,22 @@ export default function MatchDetails() {
         const pf = Number(pointsFor);
         const pa = Number(pointsAgainst);
         const result = pf > pa ? "Win" : pf < pa ? "Loss" : "Draw";
-        await setStats(id, { ...stats, pointsFor: pf, pointsAgainst: pa, result });
-        setStatsState(prev => ({ ...prev, pointsFor: pf, pointsAgainst: pa, result }));
+        const updated = { ...(docStats || {}), pointsFor: pf, pointsAgainst: pa, result };
+        await setStats(id, updated);
+        setDocStats(updated);
         setSaving(false);
     }
 
+    async function handleSquadSave(squad) {
+        const updated = { ...(docStats || {}), squad };
+        await setStats(id, updated);
+        setDocStats(updated);
+    }
+
     const canEdit = role === "admin" || role === "coach";
-
-    // All stat sections receive only squad players; fall back to all if squad not set yet
-    const squadPlayers = stats?.squad?.length > 0
-        ? allPlayers.filter(p => stats.squad.includes(p.id))
-        : allPlayers;
-
-    const sharedProps = { stats, setStatsState, matchId: id, canEdit, players: squadPlayers };
+    const squad = docStats?.squad || [];
+    const squadPlayers = squad.length > 0 ? allPlayers.filter(p => squad.includes(p.id)) : allPlayers;
+    const sharedProps = { stats: eventStats, events, addEvent, deleteEvent, canEdit, players: squadPlayers };
 
     if (loading) return <p>Loading...</p>;
 
@@ -76,19 +77,13 @@ export default function MatchDetails() {
             <p>{match?.date} · {match?.location}</p>
 
             <Section title="Squad">
-                <SquadSection
-                    stats={stats}
-                    setStatsState={setStatsState}
-                    matchId={id}
-                    canEdit={canEdit}
-                    allPlayers={allPlayers}
-                />
+                <SquadSection squad={squad} allPlayers={allPlayers} canEdit={canEdit} onSave={handleSquadSave} />
             </Section>
 
             <Section title="Result">
-                {stats?.result && (
+                {docStats?.result && (
                     <p style={{ marginBottom: 12 }}>
-                        Result: <strong style={{ color: stats.result === "Win" ? "green" : stats.result === "Loss" ? "red" : "gray" }}>{stats.result}</strong> · Us: <strong>{stats.pointsFor}</strong> · Them: <strong>{stats.pointsAgainst}</strong>
+                        Result: <strong style={{ color: docStats.result === "Win" ? "green" : docStats.result === "Loss" ? "red" : "gray" }}>{docStats.result}</strong> · Us: <strong>{docStats.pointsFor}</strong> · Them: <strong>{docStats.pointsAgainst}</strong>
                     </p>
                 )}
                 {canEdit && (
@@ -108,41 +103,11 @@ export default function MatchDetails() {
                 )}
             </Section>
 
-            <Section title="Scrums">
-                <ScrumSection {...sharedProps} />
-            </Section>
-
-            <Section title="Line-outs">
-                <LineoutSection {...sharedProps} />
-            </Section>
-
-            <Section title="Rucks">
-                <RuckSection {...sharedProps} />
-            </Section>
-
-            <Section title="Tackles">
-                <TackleSection {...sharedProps} />
-            </Section>
-
-            <Section title="Kicks at goal">
-                <KickSection {...sharedProps} />
-            </Section>
-
-            <Section title="Play kicks">
-                <PlayKickSection {...sharedProps} />
-            </Section>
-
-            <Section title="Penalties conceded">
-                <PenaltySection {...sharedProps} />
-            </Section>
-
-            <Section title="Set plays">
-                <PlaysSection {...sharedProps} />
-            </Section>
-
-            <Section title="Tries">
-                <TrySection {...sharedProps} />
-            </Section>
+            <Section title="Scrums"><ScrumSection {...sharedProps} /></Section>
+            <Section title="Line-outs"><LineoutSection {...sharedProps} /></Section>
+            <Section title="Rucks"><RuckSection {...sharedProps} /></Section>
+            <Section title="Player events"><PlayerEvents {...sharedProps} /></Section>
+            <Section title="Set plays"><PlaysSection {...sharedProps} /></Section>
         </div>
     );
 }

@@ -1,52 +1,38 @@
-import { useState } from "react";
-import { setStats } from "../../utils/firestore";
+const TYPES = [
+    { type: "ruck_lost",         label: "Ruck Lost",    color: "#dc2626" },
+    { type: "ruck_opp_pushover", label: "Opp. Pushover", color: "#7c3aed" },
+    { type: "ruck_opp_retained", label: "Opp. Retained", color: "#d97706" },
+];
 
-export default function RuckSection({ stats, setStatsState, matchId, canEdit }) {
-    const rucks = stats?.rucks || { lost: 0, oppRecoveredPushover: 0, oppRecoveredRetained: 0 };
-
-    const [lost, setLost] = useState(rucks.lost || 0);
-    const [oppPushover, setOppPushover] = useState(rucks.oppRecoveredPushover || 0);
-    const [oppRetained, setOppRetained] = useState(rucks.oppRecoveredRetained || 0);
-    const [saving, setSaving] = useState(false);
-
-    async function handleSave(e) {
-        e.preventDefault();
-        setSaving(true);
-        const updatedRucks = {
-            lost: Number(lost),
-            oppRecoveredPushover: Number(oppPushover),
-            oppRecoveredRetained: Number(oppRetained),
-        };
-        await setStats(matchId, { ...stats, rucks: updatedRucks });
-        setStatsState(prev => ({ ...prev, rucks: updatedRucks }));
-        setSaving(false);
-    }
+export default function RuckSection({ stats, events, addEvent, deleteEvent, canEdit }) {
+    const r = stats?.rucks || { lost: 0, oppRecoveredPushover: 0, oppRecoveredRetained: 0 };
+    const recent = (events || []).filter(e => e.type.startsWith("ruck_")).slice(-5).reverse();
 
     return (
         <div>
-            {stats?.rucks && (
-                <div style={{ marginBottom: 12 }}>
-                    <p>Lost: <strong>{stats.rucks.lost}</strong> · Opp. pushover: <strong>{stats.rucks.oppRecoveredPushover}</strong> · Opp. retained: <strong>{stats.rucks.oppRecoveredRetained}</strong></p>
-                </div>
-            )}
+            <p>Lost: <strong>{r.lost}</strong> · Opp. Pushover: <strong>{r.oppRecoveredPushover}</strong> · Opp. Retained: <strong>{r.oppRecoveredRetained}</strong></p>
             {canEdit && (
-                <form onSubmit={handleSave}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 8 }}>
-                        <div>
-                            <label>Ours lost</label>
-                            <input type="number" value={lost} onChange={e => setLost(e.target.value)} min="0" />
-                        </div>
-                        <div>
-                            <label>Opp. pushover</label>
-                            <input type="number" value={oppPushover} onChange={e => setOppPushover(e.target.value)} min="0" />
-                        </div>
-                        <div>
-                            <label>Opp. retained</label>
-                            <input type="number" value={oppRetained} onChange={e => setOppRetained(e.target.value)} min="0" />
-                        </div>
+                <>
+                    <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+                        {TYPES.map(({ type, label, color }) => (
+                            <button key={type} type="button" onClick={() => addEvent({ type })}
+                                style={{ padding: "12px 20px", background: color, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, fontWeight: 500 }}>
+                                + {label}
+                            </button>
+                        ))}
                     </div>
-                    <button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Rucks"}</button>
-                </form>
+                    {recent.length > 0 && (
+                        <div style={{ marginTop: 12 }}>
+                            <small style={{ color: "#888" }}>Recent — tap ✕ to undo:</small>
+                            {recent.map(ev => (
+                                <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                                    <span style={{ fontSize: 13 }}>{TYPES.find(t => t.type === ev.type)?.label}</span>
+                                    <button type="button" onClick={() => deleteEvent(ev.id)} style={{ fontSize: 11, padding: "2px 6px" }}>✕</button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
