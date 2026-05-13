@@ -54,12 +54,6 @@ export default function Home() {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <button onClick={() => navigate("/players")}>Players</button>
-            <button onClick={() => navigate("/matches")}>Matches</button>
-            <button onClick={() => navigate("/analysis")}>Analysis</button>
-            <button onClick={() => navigate("/formation")}>Formation</button>
-          </div>
         </>
       ) : (
         <p>Loading club data...</p>

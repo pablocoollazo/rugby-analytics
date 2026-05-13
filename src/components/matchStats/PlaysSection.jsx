@@ -8,7 +8,7 @@ export default function PlaysSection({ stats, addEvent, deleteEvent, canEdit, pl
     const { club } = useAuth();
     const [playbook, setPlaybook] = useState([]);
     const [selectedPlay, setSelectedPlay] = useState(null);
-    const [playersByPosition, setPlayersByPosition] = useState({});
+    const [playersByJersey, setPlayersByJersey] = useState({});
     const [result, setResult] = useState("try");
 
     useEffect(() => {
@@ -17,46 +17,40 @@ export default function PlaysSection({ stats, addEvent, deleteEvent, canEdit, pl
 
     const plays = stats?.plays || [];
 
-    function playerAtPosition(position) {
-        const entry = squad.find(s => s.position === position);
+    function playerForJersey(jersey) {
+        const entry = squad.find(s => String(s.jersey) === String(jersey));
         return entry?.playerId || "";
     }
 
     function handlePlaySelect(playId) {
         const play = playbook.find(p => p.id === playId) || null;
         setSelectedPlay(play);
-        if (play?.positions) {
+        if (play?.jerseys) {
             const prefilled = {};
-            play.positions.forEach(pos => {
-                prefilled[pos] = playerAtPosition(pos);
-            });
-            setPlayersByPosition(prefilled);
+            play.jerseys.forEach(n => { prefilled[n] = playerForJersey(n); });
+            setPlayersByJersey(prefilled);
         } else {
-            setPlayersByPosition({});
+            setPlayersByJersey({});
         }
     }
 
     async function handleAdd(e) {
         e.preventDefault();
         if (!selectedPlay) return;
-        await addEvent({
-            type: "play",
-            playbookId: selectedPlay.id,
-            name: selectedPlay.name,
-            playersByPosition,
-            result,
-        });
+        await addEvent({ type: "play", playbookId: selectedPlay.id, name: selectedPlay.name, playersByJersey, result });
         setSelectedPlay(null);
-        setPlayersByPosition({});
+        setPlayersByJersey({});
         setResult("try");
     }
 
     function describePlay(play) {
-        if (!play.playersByPosition) return null;
-        return Object.entries(play.playersByPosition).map(([pos, pid]) => {
-            const p = players?.find(pl => pl.id === pid);
-            return `${pos}: ${p?.displayName || "—"}`;
-        }).join(", ");
+        if (!play.playersByJersey) return null;
+        return Object.entries(play.playersByJersey)
+            .sort(([a], [b]) => Number(a) - Number(b))
+            .map(([jersey, pid]) => {
+                const p = players?.find(pl => pl.id === pid);
+                return `#${jersey}: ${p?.displayName || "—"}`;
+            }).join(", ");
     }
 
     return (
@@ -100,15 +94,15 @@ export default function PlaysSection({ stats, addEvent, deleteEvent, canEdit, pl
                                 </select>
                             </div>
 
-                            {selectedPlay?.positions?.length > 0 && (
+                            {selectedPlay?.jerseys?.length > 0 && (
                                 <div style={{ marginBottom: 10 }}>
                                     <label style={{ display: "block", marginBottom: 6 }}>Players</label>
-                                    {selectedPlay.positions.map(pos => (
-                                        <div key={pos} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                                            <span style={{ fontSize: 13, width: 120, flexShrink: 0, color: "#555" }}>{pos}</span>
+                                    {selectedPlay.jerseys.map(n => (
+                                        <div key={n} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                                            <span style={{ fontWeight: 700, width: 32, flexShrink: 0 }}>#{n}</span>
                                             <select
-                                                value={playersByPosition[pos] || ""}
-                                                onChange={e => setPlayersByPosition(prev => ({ ...prev, [pos]: e.target.value }))}
+                                                value={playersByJersey[n] || ""}
+                                                onChange={e => setPlayersByJersey(prev => ({ ...prev, [n]: e.target.value }))}
                                                 style={{ flex: 1, fontSize: 13 }}
                                             >
                                                 <option value="">— none —</option>

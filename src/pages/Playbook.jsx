@@ -3,10 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { getClubPlaybook, createPlay, deletePlay } from "../utils/firestore";
 
-const ALL_POSITIONS = [
-    "Prop", "Hooker", "Lock", "Flanker", "Number 8",
-    "Scrum-half", "Fly-half", "Inside Centre", "Outside Centre", "Wing", "Fullback"
-];
+const JERSEYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
 
 export default function Playbook() {
     const { club, role } = useAuth();
@@ -15,7 +12,7 @@ export default function Playbook() {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [name, setName] = useState("");
-    const [selectedPositions, setSelectedPositions] = useState([]);
+    const [selectedJerseys, setSelectedJerseys] = useState([]);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -27,20 +24,20 @@ export default function Playbook() {
         }
     }, [club]);
 
-    function togglePosition(pos) {
-        setSelectedPositions(prev =>
-            prev.includes(pos) ? prev.filter(x => x !== pos) : [...prev, pos]
+    function toggleJersey(n) {
+        setSelectedJerseys(prev =>
+            prev.includes(n) ? prev.filter(x => x !== n) : [...prev, n].sort((a, b) => a - b)
         );
     }
 
     async function handleCreate(e) {
         e.preventDefault();
         setSaving(true);
-        await createPlay(club.clubId, { name, positions: selectedPositions });
+        await createPlay(club.clubId, { name, jerseys: selectedJerseys });
         const updated = await getClubPlaybook(club.clubId);
         setPlays(updated);
         setName("");
-        setSelectedPositions([]);
+        setSelectedJerseys([]);
         setShowForm(false);
         setSaving(false);
     }
@@ -73,18 +70,27 @@ export default function Playbook() {
                             style={{ display: "block", width: "100%", boxSizing: "border-box", marginTop: 4 }} />
                     </div>
                     <div style={{ marginTop: 12 }}>
-                        <label>Positions involved</label>
+                        <label>Jerseys involved</label>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-                            {ALL_POSITIONS.map(pos => (
-                                <label key={pos} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, cursor: "pointer" }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedPositions.includes(pos)}
-                                        onChange={() => togglePosition(pos)}
-                                    />
-                                    {pos}
-                                </label>
-                            ))}
+                            {JERSEYS.map(n => {
+                                const selected = selectedJerseys.includes(n);
+                                return (
+                                    <button
+                                        key={n}
+                                        type="button"
+                                        onClick={() => toggleJersey(n)}
+                                        style={{
+                                            width: 40, height: 40, borderRadius: 6, border: "2px solid",
+                                            borderColor: selected ? "#1d4ed8" : "#ccc",
+                                            background: selected ? "#1d4ed8" : "#fff",
+                                            color: selected ? "#fff" : "#333",
+                                            fontWeight: 600, fontSize: 14, cursor: "pointer",
+                                        }}
+                                    >
+                                        {n}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                     <button type="submit" disabled={saving} style={{ marginTop: 12 }}>
@@ -110,8 +116,8 @@ export default function Playbook() {
                                     </button>
                                 )}
                             </div>
-                            {play.positions?.length > 0 && (
-                                <small style={{ color: "#555" }}>{play.positions.join(" · ")}</small>
+                            {play.jerseys?.length > 0 && (
+                                <small style={{ color: "#555" }}>{play.jerseys.map(n => `#${n}`).join(" · ")}</small>
                             )}
                         </div>
                     ))}
