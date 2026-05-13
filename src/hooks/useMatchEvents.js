@@ -13,6 +13,7 @@ function deriveStats(events) {
   const rucks = { lost: 0, oppRecoveredPushover: 0, oppRecoveredRetained: 0 };
   const tries = [];
   const plays = [];
+  const subs = [];
 
   for (const ev of events) {
     switch (ev.type) {
@@ -52,11 +53,12 @@ function deriveStats(events) {
       }
       case "try":  tries.push({ id: ev.id, playerId: ev.playerId, fromPlay: ev.fromPlay, minute: ev.minute }); break;
       case "play": plays.push({ id: ev.id, playbookId: ev.playbookId, name: ev.name, playersByJersey: ev.playersByJersey, result: ev.result }); break;
+      case "sub":  subs.push({ id: ev.id, minute: ev.minute, changes: ev.changes }); break;
       default: break;
     }
   }
 
-  return { scrums, lineouts, rucks, tries, plays, playerStats };
+  return { scrums, lineouts, rucks, tries, plays, subs, playerStats };
 }
 
 export function useMatchEvents(matchId) {

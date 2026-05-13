@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { getClubPlayers, getStats, setStats } from "../utils/firestore";
@@ -11,6 +11,7 @@ import LineoutSection from "../components/matchStats/LineoutSection";
 import RuckSection from "../components/matchStats/RuckSection";
 import PlayerEvents from "../components/matchStats/PlayerEvents";
 import PlaysSection from "../components/matchStats/PlaysSection";
+import SubstitutionSection from "../components/matchStats/SubstitutionSection";
 
 export default function MatchDetails() {
     const { id } = useParams();
@@ -68,9 +69,26 @@ export default function MatchDetails() {
     const squad = rawSquad.length > 0 && typeof rawSquad[0] === "string"
         ? rawSquad.map(id => ({ playerId: id, jersey: "", position: "", isStarter: true }))
         : rawSquad;
+
+    // Apply substitution events on top of initial squad to get current jersey map
+    const effectiveSquad = useMemo(() => {
+        const jerseyMap = {};
+        squad.forEach(s => { if (s.jersey !== "") jerseyMap[String(s.jersey)] = s.playerId; });
+        (eventStats.subs || []).forEach(sub => {
+            Object.entries(sub.changes || {}).forEach(([jersey, playerId]) => {
+                if (playerId) jerseyMap[jersey] = playerId;
+                else delete jerseyMap[jersey];
+            });
+        });
+        return Object.entries(jerseyMap).map(([jersey, playerId]) => {
+            const original = squad.find(s => s.playerId === playerId) || {};
+            return { ...original, playerId, jersey };
+        });
+    }, [squad, eventStats.subs]);
+
     const squadPlayerIds = squad.map(s => s.playerId);
     const squadPlayers = squadPlayerIds.length > 0 ? allPlayers.filter(p => squadPlayerIds.includes(p.id)) : allPlayers;
-    const sharedProps = { stats: eventStats, events, addEvent, deleteEvent, canEdit, players: squadPlayers, squad };
+    const sharedProps = { stats: eventStats, events, addEvent, deleteEvent, canEdit, players: squadPlayers, squad: effectiveSquad };
 
     if (loading) return <p>Loading...</p>;
 
@@ -112,6 +130,9 @@ export default function MatchDetails() {
             <Section title="Scrums"><ScrumSection {...sharedProps} /></Section>
             <Section title="Line-outs"><LineoutSection {...sharedProps} /></Section>
             <Section title="Rucks"><RuckSection {...sharedProps} /></Section>
+            <Section title="Substitutions">
+                <SubstitutionSection {...sharedProps} allPlayers={allPlayers} />
+            </Section>
             <Section title="Player events"><PlayerEvents {...sharedProps} /></Section>
             <Section title="Set plays"><PlaysSection {...sharedProps} /></Section>
         </div>
