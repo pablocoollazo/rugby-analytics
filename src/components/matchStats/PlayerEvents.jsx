@@ -107,24 +107,18 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                     {onField.map(p => {
                         const entry = squad.find(s => s.playerId === p.id);
                         const pos = JERSEY_POSITION[Number(entry?.jersey)] || entry?.position || p.mainPosition;
-                        const label = summaryLabel(p);
                         return (
                             <option key={p.id} value={p.id}>
-                                {entry?.jersey ? `#${entry.jersey} ` : ""}{p.displayName} — {pos}{label !== "—" ? ` (${label})` : ""}
+                                {entry?.jersey ? `#${entry.jersey} ` : ""}{p.displayName} — {pos}
                             </option>
                         );
                     })}
                 </optgroup>
                 {offField.length > 0 && (
                     <optgroup label="Fuera del campo">
-                        {offField.map(p => {
-                            const label = summaryLabel(p);
-                            return (
-                                <option key={p.id} value={p.id}>
-                                    {p.displayName}{label !== "—" ? ` (${label})` : ""}
-                                </option>
-                            );
-                        })}
+                        {offField.map(p => (
+                            <option key={p.id} value={p.id}>{p.displayName}</option>
+                        ))}
                     </optgroup>
                 )}
             </select>
@@ -136,6 +130,9 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                         <strong>{selectedPlayer.displayName}</strong>
                         <button type="button" onClick={() => setSelectedId(null)}
                             style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#555" }}>✕</button>
+                    </div>
+                    <div style={{ marginBottom: 10, fontSize: 13, color: "#555" }}>
+                        {summaryLabel(selectedPlayer)}
                     </div>
                     <small style={{ color: "#888" }}>Fuera del campo — solo se pueden deshacer eventos.</small>
                     {recentEvents.length > 0 && (
@@ -156,10 +153,15 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
             {/* Action panel for selected player */}
             {selectedPlayer && canEdit && selectedIsOnField && (
                 <div style={{ marginTop: 10, padding: "14px 16px", background: "#dbeafe", borderRadius: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                         <strong>{selectedPlayer.displayName}</strong>
                         <button type="button" onClick={() => setSelectedId(null)}
                             style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#555" }}>✕</button>
+                    </div>
+
+                    {/* Stats so far */}
+                    <div style={{ fontSize: 13, color: "#1e40af", marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid #bfdbfe" }}>
+                        {summaryLabel(selectedPlayer)}
                     </div>
 
                     {/* Tackles */}
