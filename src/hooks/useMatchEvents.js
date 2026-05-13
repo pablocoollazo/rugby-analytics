@@ -51,7 +51,7 @@ function deriveStats(events) {
         break;
       }
       case "try":  tries.push({ id: ev.id, playerId: ev.playerId, fromPlay: ev.fromPlay, minute: ev.minute }); break;
-      case "play": plays.push({ id: ev.id, playbookId: ev.playbookId, name: ev.name, playerIds: ev.playerIds, result: ev.result }); break;
+      case "play": plays.push({ id: ev.id, playbookId: ev.playbookId, name: ev.name, playersByJersey: ev.playersByJersey, result: ev.result }); break;
       default: break;
     }
   }

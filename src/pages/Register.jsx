@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
-import { createClub, joinClub, getUnlinkedPlayers, linkPlayerToUser } from "../utils/firestore";
+import { createClub, joinClub, getUnlinkedPlayers, linkPlayerToUser, updateMemberRole } from "../utils/firestore";
 
 export default function Register() {
   const { register } = useAuth();
@@ -74,6 +74,7 @@ export default function Register() {
       if (selectedPlayerId) {
         await linkPlayerToUser(selectedPlayerId, userId);
       }
+      await updateMemberRole(clubId, userId, "player");
       navigate("/");
     } catch {
       setError("Error linking player profile");

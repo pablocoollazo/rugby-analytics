@@ -9,6 +9,7 @@ import Analysis from "./pages/Analysis";
 import MatchDetails from "./pages/MatchDetails";
 import Playbook from "./pages/Playbook";
 import ClubMembers from "./pages/ClubMembers";
+import Navbar from "./components/Navbar";
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
@@ -23,8 +24,11 @@ function AdminRoute({ children }) {
 }
 
 export default function App() {
+  const { user } = useAuth();
   return (
-    <Routes>
+    <>
+      {user && <Navbar />}
+      <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
@@ -35,5 +39,6 @@ export default function App() {
       <Route path="/playbook" element={<PrivateRoute><Playbook /></PrivateRoute>} />
       <Route path="/club" element={<AdminRoute><ClubMembers /></AdminRoute>} />
     </Routes>
+    </>
   );
 }
