@@ -40,8 +40,15 @@ export default function SquadSection({ squad, allPlayers, canEdit, onSave }) {
         setEntries(prev => {
             const updated = { ...prev[playerId], [field]: value };
             if (field === "jersey") {
-                const autoPos = JERSEY_POSITION[Number(value)];
-                if (autoPos) updated.position = autoPos;
+                const n = Number(value);
+                if (n >= 1 && n <= 15) {
+                    const autoPos = JERSEY_POSITION[n];
+                    if (autoPos) updated.position = autoPos;
+                }
+            }
+            if (field === "isStarter" && !value) {
+                const player = allPlayers.find(p => p.id === playerId);
+                if (player?.mainPosition) updated.position = player.mainPosition;
             }
             return { ...prev, [playerId]: updated };
         });

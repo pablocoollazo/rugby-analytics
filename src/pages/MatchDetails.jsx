@@ -73,7 +73,7 @@ export default function MatchDetails() {
     // Apply substitution events on top of initial squad to get current jersey map
     const effectiveSquad = useMemo(() => {
         const jerseyMap = {};
-        squad.forEach(s => { if (s.jersey !== "") jerseyMap[String(s.jersey)] = s.playerId; });
+        squad.forEach(s => { const n = Number(s.jersey); if (n >= 1 && n <= 15) jerseyMap[String(n)] = s.playerId; });
         (eventStats.subs || []).forEach(sub => {
             Object.entries(sub.changes || {}).forEach(([jersey, playerId]) => {
                 if (playerId) jerseyMap[jersey] = playerId;
