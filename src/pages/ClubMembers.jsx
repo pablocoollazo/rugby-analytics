@@ -51,7 +51,7 @@ export default function ClubMembers() {
             const linked = getLinkedPlayer(m.uid);
             const isSelf = m.uid === user.uid;
             return (
-              <div key={m.uid} style={{ background: "#f5f5f5", padding: 16, borderRadius: 8, marginBottom: 12 }}>
+              <div key={m.uid} className="card" style={{ background: "#f5f5f5", padding: 16, borderRadius: 8, marginBottom: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
                     <strong>{m.email}</strong>

@@ -2,7 +2,7 @@ import { useState } from "react";
 
 const PENALTY_REASONS = ["scrum", "ruck", "offside", "knock-on", "illegal tackle", "other"];
 
-export default function PlayerEvents({ stats, events, addEvent, deleteEvent, canEdit, players }) {
+export default function PlayerEvents({ stats, events, addEvent, deleteEvent, canEdit, players, squad = [] }) {
     const [selectedId, setSelectedId] = useState(null);
     const [tryForm, setTryForm] = useState({ fromPlay: false, minute: "" });
     const [penaltyReason, setPenaltyReason] = useState("scrum");
@@ -74,8 +74,21 @@ export default function PlayerEvents({ stats, events, addEvent, deleteEvent, can
                                 userSelect: "none",
                             }}
                         >
-                            <div style={{ fontWeight: 600, fontSize: 14 }}>{p.displayName}</div>
-                            <div style={{ fontSize: 11, opacity: 0.7, marginTop: 1 }}>{p.mainPosition}</div>
+                            {(() => {
+                                const entry = squad.find(s => s.playerId === p.id);
+                                return (
+                                    <>
+                                        <div style={{ fontWeight: 600, fontSize: 14 }}>
+                                            {entry?.jersey ? <span style={{ opacity: 0.7, marginRight: 5 }}>#{entry.jersey}</span> : null}
+                                            {p.displayName}
+                                        </div>
+                                        <div style={{ fontSize: 11, opacity: 0.7, marginTop: 1 }}>
+                                            {entry?.position || p.mainPosition}
+                                            {entry && !entry.isStarter ? " · Sub" : ""}
+                                        </div>
+                                    </>
+                                );
+                            })()}
                             <div style={{ fontSize: 11, marginTop: 4, opacity: 0.85 }}>{summaryLabel(p)}</div>
                         </div>
                     );

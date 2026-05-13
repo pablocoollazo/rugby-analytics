@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getClubPlayers, getClubMatches } from "../utils/firestore";
 
 export default function Home() {
-  const { user, club, role, logout, loading, clubLoading } = useAuth();
+  const { club, role, logout, clubLoading } = useAuth();
   const navigate = useNavigate();
   const [playerCount, setPlayerCount] = useState(0);
   const [matchCount, setMatchCount] = useState(0);
@@ -37,18 +37,18 @@ export default function Home() {
 
       {club ? (
         <>
-          <div style={{ background: "#f5f5f5", padding: 20, borderRadius: 8, marginBottom: 20 }}>
+          <div className="card" style={{ background: "#f5f5f5", padding: 20, borderRadius: 8, marginBottom: 20 }}>
             <h2>{club.name}</h2>
             <p>Your role: <strong>{role}</strong></p>
             <p>Club code: <strong>{club.code}</strong></p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-            <div style={{ background: "#e8f4fd", padding: 20, borderRadius: 8, textAlign: "center" }}>
+            <div className="card" style={{ background: "#e8f4fd", padding: 20, borderRadius: 8, textAlign: "center" }}>
               <h3>{playerCount}</h3>
               <p>Players</p>
             </div>
-            <div style={{ background: "#e8f4fd", padding: 20, borderRadius: 8, textAlign: "center" }}>
+            <div className="card" style={{ background: "#e8f4fd", padding: 20, borderRadius: 8, textAlign: "center" }}>
               <h3>{matchCount}</h3>
               <p>Matches</p>
             </div>

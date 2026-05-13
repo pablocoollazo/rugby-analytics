@@ -62,9 +62,15 @@ export default function MatchDetails() {
     }
 
     const canEdit = role === "admin" || role === "coach";
-    const squad = docStats?.squad || [];
-    const squadPlayers = squad.length > 0 ? allPlayers.filter(p => squad.includes(p.id)) : allPlayers;
-    const sharedProps = { stats: eventStats, events, addEvent, deleteEvent, canEdit, players: squadPlayers };
+    // squad: array of { playerId, jersey, position, isStarter } (new format)
+    // or array of strings (old format — backwards compat)
+    const rawSquad = docStats?.squad || [];
+    const squad = rawSquad.length > 0 && typeof rawSquad[0] === "string"
+        ? rawSquad.map(id => ({ playerId: id, jersey: "", position: "", isStarter: true }))
+        : rawSquad;
+    const squadPlayerIds = squad.map(s => s.playerId);
+    const squadPlayers = squadPlayerIds.length > 0 ? allPlayers.filter(p => squadPlayerIds.includes(p.id)) : allPlayers;
+    const sharedProps = { stats: eventStats, events, addEvent, deleteEvent, canEdit, players: squadPlayers, squad };
 
     if (loading) return <p>Loading...</p>;
 
@@ -114,7 +120,7 @@ export default function MatchDetails() {
 
 function Section({ title, children }) {
     return (
-        <div style={{ background: "#f5f5f5", padding: 20, borderRadius: 8, marginBottom: 20 }}>
+        <div className="card" style={{ background: "#f5f5f5", padding: 20, borderRadius: 8, marginBottom: 20 }}>
             <h2 style={{ marginTop: 0, marginBottom: 16 }}>{title}</h2>
             {children}
         </div>

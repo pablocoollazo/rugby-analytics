@@ -54,11 +54,28 @@ body {
   margin: 0;
 }
 
+.card,
+.card h1,
+.card h2,
+.card h3,
+.card p,
+.card span,
+.card small,
+.card label,
+.card strong {
+  color: #1a1a1a;
+}
+
+input, select, textarea {
+  color: #1a1a1a;
+  background: #fff;
+}
+
 #root {
   width: 1126px;
   max-width: 100%;
   margin: 0 auto;
-  text-align: center;
+  text-align: left;
   border-inline: 1px solid var(--border);
   min-height: 100svh;
   display: flex;

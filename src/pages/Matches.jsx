@@ -60,7 +60,7 @@ export default function Matches() {
       )}
 
       {showForm && (
-        <form onSubmit={handleCreate} style={{ marginBottom: 20, background: "#f5f5f5", padding: 20, borderRadius: 8 }}>
+        <form onSubmit={handleCreate} className="card" style={{ marginBottom: 20, background: "#f5f5f5", padding: 20, borderRadius: 8 }}>
           <div>
             <label>Rival</label>
             <input value={rival} onChange={(e) => setRival(e.target.value)} required />
@@ -92,7 +92,7 @@ export default function Matches() {
           {matches.map(m => (
             <div 
               key={m.id} 
-              style={{ background: "#f5f5f5", padding: 16, borderRadius: 8, marginBottom: 12, cursor: "pointer" }} 
+              className="card" style={{ background: "#f5f5f5", padding: 16, borderRadius: 8, marginBottom: 12, cursor: "pointer" }} 
               onClick={() => navigate(`/matches/${m.id}`)}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

@@ -100,7 +100,7 @@ export default function Players() {
       )}
 
       {showForm && (
-        <form onSubmit={handleCreate} style={{ background: "#f5f5f5", padding: 20, borderRadius: 8, marginBottom: 20 }}>
+        <form onSubmit={handleCreate} className="card" style={{ background: "#f5f5f5", padding: 20, borderRadius: 8, marginBottom: 20 }}>
           <div>
             <label>Name</label>
             <input value={name} onChange={e => setName(e.target.value)} required />
@@ -188,7 +188,7 @@ export default function Players() {
       ) : (
         <div>
           {players.map(p => (
-            <div key={p.id} style={{ background: "#f5f5f5", padding: 16, borderRadius: 8, marginBottom: 12 }}>
+            <div key={p.id} className="card" style={{ background: "#f5f5f5", padding: 16, borderRadius: 8, marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <strong>{p.displayName}</strong>
                 <span>{p.mainPosition}</span>
