@@ -43,7 +43,7 @@ function deriveStats(events) {
       }
       case "play_kick": {
         const pks = ps(ev.playerId).playKicks || [];
-        ps(ev.playerId).playKicks = [...pks, { id: ev.id, rating: ev.rating, distance: ev.distance }];
+        ps(ev.playerId).playKicks = [...pks, { id: ev.id, rating: ev.rating, distance: ev.distance, inTouch: ev.inTouch, is5022: ev.is5022 }];
         break;
       }
       case "penalty": {

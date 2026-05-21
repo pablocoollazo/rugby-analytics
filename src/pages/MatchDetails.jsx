@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
-import { getClubPlayers, getStats, setStats } from "../utils/firestore";
+import { getClubPlayers, getStats, setStats, updateMatch } from "../utils/firestore";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { getWeatherForMatch } from "../utils/weather";
 import { useMatchEvents } from "../hooks/useMatchEvents";
 import SquadSection from "../components/matchStats/SquadSection";
 import ScrumSection from "../components/matchStats/ScrumSection";
@@ -24,13 +25,26 @@ export default function MatchDetails() {
     const [saving, setSaving] = useState(false);
     const [pointsFor, setPointsFor] = useState("");
     const [pointsAgainst, setPointsAgainst] = useState("");
+    const [weather, setWeather] = useState(null);
 
     const { stats: eventStats, events, addEvent, deleteEvent } = useMatchEvents(id);
 
     useEffect(() => {
         async function load() {
             const matchSnap = await getDoc(doc(db, "matches", id));
-            setMatch({ id: matchSnap.id, ...matchSnap.data() });
+            const matchData = { id: matchSnap.id, ...matchSnap.data() };
+            setMatch(matchData);
+
+            if (matchData.weather) {
+                setWeather(matchData.weather);
+            } else if (matchData.city && matchData.date) {
+                const w = await getWeatherForMatch(matchData.city, matchData.date);
+                if (w) {
+                    setWeather(w);
+                    await updateMatch(id, { weather: w });
+                }
+            }
+
             const clubPlayers = await getClubPlayers(club.clubId);
             setAllPlayers(clubPlayers);
             const existing = await getStats(id);
@@ -106,7 +120,8 @@ export default function MatchDetails() {
                 <h1>{match?.rival}</h1>
                 <button onClick={() => navigate("/matches")}>Back</button>
             </div>
-            <p>{match?.date} · {match?.location}</p>
+            <p>{match?.date} · {match?.location}{match?.city ? ` · ${match.city}` : ""}</p>
+            {weather && <WeatherBadge weather={weather} />}
 
             <Section title="Squad">
                 <SquadSection squad={squad} allPlayers={allPlayers} canEdit={canEdit} onSave={handleSquadSave} />
@@ -152,6 +167,27 @@ function Section({ title, children }) {
         <div className="card" style={{ background: "#f5f5f5", padding: 20, borderRadius: 8, marginBottom: 20 }}>
             <h2 style={{ marginTop: 0, marginBottom: 16 }}>{title}</h2>
             {children}
+        </div>
+    );
+}
+
+function WeatherBadge({ weather }) {
+    const icon = {
+        "Lluvia": "🌧",
+        "Llovizna": "🌦",
+        "Viento fuerte": "💨",
+        "Ventoso": "🌬",
+        "Despejado": "☀️",
+    }[weather.condition] ?? "🌤";
+
+    return (
+        <div style={{ display: "flex", gap: 16, alignItems: "center", background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8, padding: "8px 14px", marginBottom: 16, fontSize: 13, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 20 }}>{icon}</span>
+            <span><strong>{weather.condition}</strong></span>
+            <span>🌡 {weather.tempMin}–{weather.temp}°C</span>
+            {weather.rain > 0 && <span>🌧 {weather.rain} mm</span>}
+            <span>💨 {weather.wind} km/h</span>
+            <span style={{ color: "#64748b" }}>{weather.city}{weather.country ? `, ${weather.country}` : ""}</span>
         </div>
     );
 }

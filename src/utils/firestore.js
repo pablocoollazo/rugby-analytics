@@ -91,6 +91,10 @@ export async function getClubMatches(clubId) {
     return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
+export async function updateMatch(matchId, data) {
+    await updateDoc(doc(db, "matches", matchId), data);
+}
+
 //STATS
 export async function setStats(matchId, statsData) {
     await setDoc(doc(db, "stats", matchId), { ...statsData, updatedIn: new Date() });

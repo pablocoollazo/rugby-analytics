@@ -12,7 +12,7 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
     const [selectedId, setSelectedId] = useState(null);
     const [tryForm, setTryForm] = useState({ fromPlay: false, minute: "" });
     const [penaltyReason, setPenaltyReason] = useState("scrum");
-    const [kickForm, setKickForm] = useState({ rating: "good", distance: "" });
+    const [kickForm, setKickForm] = useState({ rating: "good", inTouch: false, is5022: false, distance: "" });
 
     if (!players?.length) return <p style={{ color: "#999" }}>No players in squad.</p>;
 
@@ -33,7 +33,7 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
         setSelectedId(prev => prev === id ? null : id);
         setTryForm({ fromPlay: false, minute: "" });
         setPenaltyReason("scrum");
-        setKickForm({ rating: "good", distance: "" });
+        setKickForm({ rating: "good", inTouch: false, is5022: false, distance: "" });
     }
 
     async function addTry() {
@@ -48,8 +48,15 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
 
     async function addPlayKick() {
         if (!kickForm.distance) return;
-        await addWithPosition({ type: "play_kick", playerId: selectedId, rating: kickForm.rating, distance: Number(kickForm.distance) });
-        setKickForm({ rating: "good", distance: "" });
+        await addWithPosition({
+            type: "play_kick",
+            playerId: selectedId,
+            rating: kickForm.rating,
+            distance: Number(kickForm.distance),
+            inTouch: kickForm.inTouch,
+            is5022: kickForm.is5022,
+        });
+        setKickForm({ rating: "good", inTouch: false, is5022: false, distance: "" });
     }
 
     function summaryLabel(p) {
@@ -59,15 +66,23 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
         const byPos = {};
         playerEvents.forEach(ev => {
             const pos = ev.position || "?";
-            if (!byPos[pos]) byPos[pos] = { tw: 0, tl: 0, tm: 0, tries: 0, pens: 0, kMade: 0, kTotal: 0 };
+            if (!byPos[pos]) byPos[pos] = { tw: 0, tl: 0, tm: 0, tries: 0, penReasons: {}, kMade: 0, kTotal: 0, pkGood: 0, pkTotal: 0, pkDist: 0, pkIn: 0, pk5022: 0, le: 0 };
             const s = byPos[pos];
             if (ev.type === "tackle_won")          s.tw++;
             if (ev.type === "tackle_lost")          s.tl++;
             if (ev.type === "tackle_missed")        s.tm++;
             if (ev.type === "try")                  s.tries++;
-            if (ev.type === "penalty")              s.pens++;
+            if (ev.type === "penalty")              s.penReasons[ev.reason] = (s.penReasons[ev.reason] || 0) + 1;
             if (ev.type === "kick_at_goal_made")    { s.kMade++; s.kTotal++; }
             if (ev.type === "kick_at_goal_missed")  s.kTotal++;
+            if (ev.type === "play_kick")            {
+                if (ev.rating === "good") s.pkGood++;
+                s.pkTotal++;
+                s.pkDist += ev.distance || 0;
+                if (ev.inTouch)  s.pkIn++;
+                if (ev.is5022)   s.pk5022++;
+            }
+            if (ev.type === "lineout_error")        s.le++;
         });
 
         const positions = Object.keys(byPos);
@@ -77,8 +92,17 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
             const parts = [];
             if (s.tw + s.tl + s.tm > 0) parts.push(`T ${s.tw}/${s.tl}/${s.tm}`);
             if (s.tries > 0)            parts.push(`${s.tries} try`);
-            if (s.pens > 0)             parts.push(`${s.pens} pen`);
-            if (s.kTotal > 0)           parts.push(`${s.kMade}/${s.kTotal} kicks`);
+            const penEntries = Object.entries(s.penReasons);
+            if (penEntries.length > 0)  parts.push(`pen: ${penEntries.map(([r, n]) => `${n} ${r}`).join(", ")}`);
+            if (s.kTotal > 0)           parts.push(`${s.kMade}/${s.kTotal} KG`);
+            if (s.pkTotal > 0) {
+                let pk = `${s.pkGood}/${s.pkTotal} PK`;
+                if (s.pkDist > 0) pk += ` ${s.pkDist}m`;
+                if (s.pkIn > 0)   pk += ` ${s.pkIn}T`;
+                if (s.pk5022 > 0) pk += ` ${s.pk5022}×50/22`;
+                parts.push(pk);
+            }
+            if (s.le > 0)               parts.push(`${s.le} LE`);
             return parts.join(" · ");
         }
 
@@ -219,7 +243,7 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                     {/* Play kick */}
                     <div style={{ marginBottom: selectedPlayer.isKicker || selectedPlayer.isThrower ? 12 : 0 }}>
                         <small style={{ color: "#1e40af", fontWeight: 700, letterSpacing: 0.5 }}>PLAY KICK</small>
-                        <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center" }}>
+                        <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center", flexWrap: "wrap" }}>
                             <select value={kickForm.rating} onChange={e => setKickForm(f => ({ ...f, rating: e.target.value }))}
                                 style={{ fontSize: 13 }}>
                                 <option value="good">Good</option>
@@ -228,6 +252,16 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                             <input type="number" placeholder="m" value={kickForm.distance}
                                 onChange={e => setKickForm(f => ({ ...f, distance: e.target.value }))}
                                 min="0" style={{ width: 65, fontSize: 13 }} />
+                            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}>
+                                <input type="checkbox" checked={kickForm.inTouch}
+                                    onChange={e => setKickForm(f => ({ ...f, inTouch: e.target.checked, is5022: e.target.checked ? f.is5022 : false }))} />
+                                Touch
+                            </label>
+                            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}>
+                                <input type="checkbox" checked={kickForm.is5022} disabled={!kickForm.inTouch}
+                                    onChange={e => setKickForm(f => ({ ...f, is5022: e.target.checked }))} />
+                                50/22
+                            </label>
                             <button type="button" onClick={addPlayKick} disabled={!kickForm.distance}
                                 style={{ padding: "8px 16px", background: "#0891b2", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
                                 + Add
@@ -292,7 +326,7 @@ function formatEventLabel(ev) {
         tackle_missed:       "Tackle missed",
         kick_at_goal_made:   "Kick at goal — made",
         kick_at_goal_missed: "Kick at goal — missed",
-        play_kick:           `Play kick — ${ev.rating}, ${ev.distance}m`,
+        play_kick:           `Play kick — ${ev.rating}, ${ev.distance}m${ev.inTouch ? (ev.is5022 ? " (50/22)" : " touch") : ""}`,
         penalty:             `Penalty — ${ev.reason}`,
         lineout_error:       "Lineout throwing error",
     };

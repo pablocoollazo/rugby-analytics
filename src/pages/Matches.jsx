@@ -12,6 +12,7 @@ export default function Matches() {
   const [rival, setRival] = useState("");
   const [date, setDate] = useState("");
   const [location, setLocation] = useState("Home");
+  const [city, setCity] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function Matches() {
       rival,
       date,
       location,
+      city: city.trim() || null,
       result: null,
       pointsFor: null,
       pointsAgainst: null,
@@ -40,6 +42,7 @@ export default function Matches() {
     setRival("");
     setDate("");
     setLocation("Home");
+    setCity("");
     setSaving(false);
     setShowForm(false);
   }
@@ -76,6 +79,10 @@ export default function Matches() {
               <option value="Away">Away</option>
               <option value="Neutral">Neutral</option>
             </select>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <label>Ciudad (para el tiempo)</label>
+            <input value={city} onChange={e => setCity(e.target.value)} placeholder="ej. Pisa, Roma..." />
           </div>
           <button type="submit" disabled={saving} style={{ marginTop: 12 }}>
             {saving ? "Saving..." : "Save Match"}

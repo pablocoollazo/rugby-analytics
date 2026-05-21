@@ -3,7 +3,7 @@ import { useState } from "react";
 const JERSEY_POSITION = {
     1: "Prop Left", 2: "Hooker", 3: "Prop Right",
     4: "Lock", 5: "Lock",
-    6: "Flanker", 7: "Flanker", 8: "Number8",
+    6: "Flanker", 7: "Flanker", 8: "Number 8",
     9: "Scrum Half", 10: "Fly-half",
     11: "Wing", 12: "Inside Center", 13: "Outside Center", 14: "Wing", 15: "Full-back",
 };
