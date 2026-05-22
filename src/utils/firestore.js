@@ -129,6 +129,15 @@ export async function deletePlay(playId) {
 }
 
 //MATCH EVENTS
+export async function getMatchEvents(matchId) {
+    const q = query(
+        collection(db, "matches", matchId, "events"),
+        orderBy("timestamp", "asc")
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
 export async function addMatchEvent(matchId, data) {
   return addDoc(collection(db, "matches", matchId, "events"), {
     ...data,
