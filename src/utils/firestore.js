@@ -76,6 +76,10 @@ export async function getClubPlayers(clubId) {
     return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
+export async function updatePlayer(playerId, data) {
+    await updateDoc(doc(db, "players", playerId), data);
+}
+
 export async function deletePlayer(playerId) {
   await deleteDoc(doc(db, "players", playerId));
 }
@@ -86,9 +90,13 @@ export async function createMatch(clubId, matchData) {
 }
 
 export async function getClubMatches(clubId) {
-    const q = query(collection(db, "matches"), where("clubId", "==", clubId));
+    const q = query(collection(db, "matches"), where("clubId", "==", clubId), orderBy("date", "desc"));
     const snap = await getDocs(q);
     return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+export async function deleteMatch(matchId) {
+    await deleteDoc(doc(db, "matches", matchId));
 }
 
 export async function updateMatch(matchId, data) {

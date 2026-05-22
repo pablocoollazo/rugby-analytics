@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { getClubMatches, createMatch } from "../utils/firestore";
+import { getClubMatches, createMatch, deleteMatch } from "../utils/firestore";
 
 export default function Matches() {
   const { club, role } = useAuth();
@@ -45,6 +45,12 @@ export default function Matches() {
     setCity("");
     setSaving(false);
     setShowForm(false);
+  }
+
+  async function handleDelete(matchId) {
+    if (!confirm("Delete this match?")) return;
+    await deleteMatch(matchId);
+    setMatches(prev => prev.filter(m => m.id !== matchId));
   }
 
   const canEdit = role === "admin" || role === "coach";
@@ -97,17 +103,25 @@ export default function Matches() {
       ) : (
         <div>
           {matches.map(m => (
-            <div 
-              key={m.id} 
-              className="card" style={{ background: "#f5f5f5", padding: 16, borderRadius: 8, marginBottom: 12, cursor: "pointer" }} 
-              onClick={() => navigate(`/matches/${m.id}`)}
-            >
+            <div key={m.id} className="card"
+              style={{ background: "#f5f5f5", padding: 16, borderRadius: 8, marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <strong>vs {m.rival}</strong>
-                <span>{m.date}</span>
+                <strong style={{ cursor: "pointer" }} onClick={() => navigate(`/matches/${m.id}`)}>
+                  vs {m.rival}
+                </strong>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span>{m.date}</span>
+                  {canEdit && (
+                    <button onClick={() => handleDelete(m.id)}
+                      style={{ color: "red", background: "none", border: "none", cursor: "pointer", fontSize: 13 }}>
+                      Borrar
+                    </button>
+                  )}
+                </div>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4}}>
-                <small>{m.location}</small>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, cursor: "pointer" }}
+                onClick={() => navigate(`/matches/${m.id}`)}>
+                <small>{m.location}{m.city ? ` · ${m.city}` : ""}</small>
                 <small>{m.result || "Pending"}</small>
               </div>
             </div>
