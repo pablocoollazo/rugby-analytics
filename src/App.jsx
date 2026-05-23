@@ -4,6 +4,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Players from "./pages/Players";
+import PlayerProfile from "./pages/PlayerProfile";
 import Matches from "./pages/Matches";
 import Analysis from "./pages/Analysis";
 import MatchDetails from "./pages/MatchDetails";
@@ -33,6 +34,7 @@ export default function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
       <Route path="/players" element={<PrivateRoute><Players /></PrivateRoute>} />
+      <Route path="/players/:id" element={<PrivateRoute><PlayerProfile /></PrivateRoute>} />
       <Route path="/matches" element={<PrivateRoute><Matches /></PrivateRoute>} />
       <Route path="/matches/:id" element={<PrivateRoute><MatchDetails /></PrivateRoute>} />
       <Route path="/analysis" element={<PrivateRoute><Analysis /></PrivateRoute>} />

@@ -295,18 +295,24 @@ export default function Players() {
                       {p.isKicker && <small style={{ background: "#dcfce7", padding: "1px 6px", borderRadius: 10 }}>Kicker</small>}
                     </div>
                   )}
-                  {canEdit && (
-                    <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-                      <button onClick={() => startEdit(p)}
-                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#2563eb" }}>
-                        Editar
-                      </button>
-                      <button onClick={() => handleDelete(p.id)}
-                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "red" }}>
-                        Borrar
-                      </button>
-                    </div>
-                  )}
+                  <div style={{ display: "flex", gap: 12, marginTop: 8, alignItems: "center" }}>
+                    <button onClick={() => navigate(`/players/${p.id}`)}
+                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#2563eb" }}>
+                      Ver perfil
+                    </button>
+                    {canEdit && (
+                      <>
+                        <button onClick={() => startEdit(p)}
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#555" }}>
+                          Editar
+                        </button>
+                        <button onClick={() => handleDelete(p.id)}
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "red" }}>
+                          Borrar
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </>
               )}
             </div>
