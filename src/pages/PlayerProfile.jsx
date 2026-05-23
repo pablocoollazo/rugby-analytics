@@ -9,7 +9,7 @@ import {
 
 export default function PlayerProfile() {
     const { id } = useParams();
-    const { club } = useAuth();
+    const { club, role, user } = useAuth();
     const navigate = useNavigate();
     const [player, setPlayer] = useState(null);
     const [matches, setMatches] = useState([]);
@@ -22,6 +22,14 @@ export default function PlayerProfile() {
                 getClubMatches(club.clubId),
                 getClubPlayers(club.clubId),
             ]);
+
+            // Players can only view their own profile
+            if (role === "player") {
+                const ownPlayer = players.find(p => p.userId === user.uid);
+                if (!ownPlayer) { navigate("/"); return; }
+                if (ownPlayer.id !== id) { navigate(`/players/${ownPlayer.id}`, { replace: true }); return; }
+            }
+
             const found = players.find(p => p.id === id);
             setPlayer(found || null);
             setMatches(ms);
@@ -31,7 +39,7 @@ export default function PlayerProfile() {
             setLoading(false);
         }
         if (club?.clubId) load();
-    }, [id, club]);
+    }, [id, club, role, user]);
 
     // Partidos en los que el jugador tiene al menos un evento
     const playerMatches = useMemo(() =>

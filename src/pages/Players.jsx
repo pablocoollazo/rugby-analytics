@@ -18,7 +18,7 @@ const ALL_POSITIONS = [
 ];
 
 export default function Players() {
-  const { club, role } = useAuth();
+  const { club, role, user } = useAuth();
   const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -296,10 +296,12 @@ export default function Players() {
                     </div>
                   )}
                   <div style={{ display: "flex", gap: 12, marginTop: 8, alignItems: "center" }}>
-                    <button onClick={() => navigate(`/players/${p.id}`)}
-                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#2563eb" }}>
-                      Ver perfil
-                    </button>
+                    {(role !== "player" || p.userId === user?.uid) && (
+                      <button onClick={() => navigate(`/players/${p.id}`)}
+                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#2563eb" }}>
+                        Ver perfil
+                      </button>
+                    )}
                     {canEdit && (
                       <>
                         <button onClick={() => startEdit(p)}
