@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
-import { createClub, joinClub, getUnlinkedPlayers, linkPlayerToUser, updateMemberRole } from "../utils/firestore";
+import { createClub, joinClub, getUnlinkedPlayers, linkPlayerToUser } from "../utils/firestore";
 
 export default function Register() {
   const { register } = useAuth();
@@ -16,7 +16,6 @@ export default function Register() {
   const [clubOption, setClubOption] = useState("");
   const [clubName, setClubName] = useState("");
   const [clubCode, setClubCode] = useState("");
-  const [joinRole, setJoinRole] = useState("");
   const [clubId, setClubId] = useState("");
   const [unlinkedPlayers, setUnlinkedPlayers] = useState([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
@@ -42,13 +41,22 @@ export default function Register() {
     setLoading(true);
     try {
       if (clubOption === "create") {
-        const { code } = await createClub(clubName, userId, email);
-        alert(`Club created! Your code is: ${code} — share it with your team`);
+        const { coachCode, playerCode } = await createClub(clubName, userId, email);
+        alert(
+          `Club created!\n\nCoach code: ${coachCode}\nPlayer code: ${playerCode}\n\nShare the right code with each person.`
+        );
         navigate("/");
       } else {
-        const id = await joinClub(clubCode.toUpperCase(), userId, email, "coach");
-        setClubId(id);
-        setStep(3);
+        const { clubId: id, role } = await joinClub(clubCode.toUpperCase(), userId, email);
+        if (role === "coach") {
+          navigate("/");
+        } else {
+          // player — must link to a squad profile
+          setClubId(id);
+          const players = await getUnlinkedPlayers(id);
+          setUnlinkedPlayers(players);
+          setStep(3);
+        }
       }
     } catch (err) {
       setError(err.message);
@@ -56,25 +64,12 @@ export default function Register() {
     setLoading(false);
   }
 
-  async function handleRoleSelect(selectedRole) {
-    setJoinRole(selectedRole);
-    if (selectedRole === "player") {
-      setLoading(true);
-      const players = await getUnlinkedPlayers(clubId);
-      setUnlinkedPlayers(players);
-      setLoading(false);
-    }
-  }
-
   async function handlePlayerLink(e) {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      if (selectedPlayerId) {
-        await linkPlayerToUser(selectedPlayerId, userId);
-      }
-      await updateMemberRole(clubId, userId, "player");
+      await linkPlayerToUser(selectedPlayerId, userId);
       navigate("/");
     } catch {
       setError("Error linking player profile");
@@ -85,54 +80,35 @@ export default function Register() {
   if (step === 3) {
     return (
       <div style={{ maxWidth: 400, margin: "100px auto", padding: "0 20px" }}>
-        <h2>What is your role?</h2>
+        <h2>Select your profile</h2>
+        <p style={{ color: "#555", fontSize: 14 }}>Find your name in the squad and link your account to it.</p>
         {error && <p style={{ color: "red" }}>{error}</p>}
 
-        {!joinRole && (
-          <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => handleRoleSelect("coach")}>Coaching staff</button>
-            <button onClick={() => handleRoleSelect("player")}>Player</button>
+        {unlinkedPlayers.length === 0 ? (
+          <div>
+            <p style={{ color: "#888" }}>
+              No unlinked squad profiles found. Ask your coach to add you to the squad first, then register.
+            </p>
           </div>
-        )}
-
-        {joinRole === "coach" && (
-          <p>Joined as coaching staff. Your admin can adjust your role if needed.</p>
-        )}
-
-        {joinRole === "player" && (
+        ) : (
           <form onSubmit={handlePlayerLink}>
-            <p>Select your profile from the squad:</p>
-            {loading ? (
-              <p>Loading players...</p>
-            ) : unlinkedPlayers.length === 0 ? (
-              <p>No unlinked players found. Ask your coach to add you first.</p>
-            ) : (
-              <select
-                value={selectedPlayerId}
-                onChange={e => setSelectedPlayerId(e.target.value)}
-                required
-                style={{ width: "100%", marginBottom: 12 }}
-              >
-                <option value="">-- Select your profile --</option>
-                {unlinkedPlayers.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} {p.surname} — {p.mainPosition}
-                  </option>
-                ))}
-              </select>
-            )}
-            {unlinkedPlayers.length > 0 && (
-              <button type="submit" disabled={loading || !selectedPlayerId}>
-                {loading ? "Saving..." : "Continue"}
-              </button>
-            )}
+            <select
+              value={selectedPlayerId}
+              onChange={e => setSelectedPlayerId(e.target.value)}
+              required
+              style={{ width: "100%", marginBottom: 12, padding: "8px", fontSize: 14 }}
+            >
+              <option value="">-- Select your name --</option>
+              {unlinkedPlayers.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.name} {p.surname} — {p.mainPosition}
+                </option>
+              ))}
+            </select>
+            <button type="submit" disabled={loading || !selectedPlayerId}>
+              {loading ? "Saving..." : "Continue"}
+            </button>
           </form>
-        )}
-
-        {joinRole === "coach" && (
-          <button onClick={() => navigate("/")} style={{ marginTop: 12 }}>
-            Continue
-          </button>
         )}
       </div>
     );

@@ -5,31 +5,42 @@ import {
 } from "firebase/firestore";
 
 //CLUBS
+function randomCode() {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
 export async function createClub(name, userId, email) {
-  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const coachCode = randomCode();
+  const playerCode = randomCode();
   const clubRef = doc(collection(db, "clubs"));
   await setDoc(clubRef, {
     name,
-    code,
+    coachCode,
+    playerCode,
     creatorId: userId,
     members: { [userId]: "admin" },
     createdIn: new Date()
   });
   await setDoc(doc(db, "users", userId), { clubId: clubRef.id, role: "admin", email });
-  return { clubId: clubRef.id, code };
+  return { clubId: clubRef.id, coachCode, playerCode };
 }
 
-export async function joinClub(code, userId, email, role = "coach") {
-  const q = query(collection(db, "clubs"), where("code", "==", code));
-  const snap = await getDocs(q);
+export async function joinClub(code, userId, email) {
+  // Try coach code first
+  let snap = await getDocs(query(collection(db, "clubs"), where("coachCode", "==", code)));
+  let role = "coach";
+  if (snap.empty) {
+    // Try player code
+    snap = await getDocs(query(collection(db, "clubs"), where("playerCode", "==", code)));
+    role = "player";
+  }
   if (snap.empty) throw new Error("Club not found");
   const clubDoc = snap.docs[0];
-  const currentMembers = clubDoc.data().members;
   await updateDoc(doc(db, "clubs", clubDoc.id), {
-    members: { ...currentMembers, [userId]: role }
+    members: { ...clubDoc.data().members, [userId]: role }
   });
   await setDoc(doc(db, "users", userId), { clubId: clubDoc.id, role, email });
-  return clubDoc.id;
+  return { clubId: clubDoc.id, role };
 }
 
 export async function getClubMembersDetails(members) {
@@ -45,6 +56,15 @@ export async function getClubMembersDetails(members) {
 
 export async function linkPlayerToUser(playerId, userId) {
   await updateDoc(doc(db, "players", playerId), { userId });
+}
+
+export async function relinkPlayer(oldPlayerId, newPlayerId, userId) {
+  if (oldPlayerId) {
+    await updateDoc(doc(db, "players", oldPlayerId), { userId: null });
+  }
+  if (newPlayerId) {
+    await updateDoc(doc(db, "players", newPlayerId), { userId });
+  }
 }
 
 export async function getUnlinkedPlayers(clubId) {
