@@ -63,7 +63,10 @@ export default function Matches() {
       </div>
 
       {canEdit && (
-        <button onClick={() => setShowForm(!showForm)} style={{ marginBottom: 20 }}>
+        <button onClick={() => {
+          if (!showForm && club?.city) setCity(club.city);
+          setShowForm(!showForm);
+        }} style={{ marginBottom: 20 }}>
           {showForm ? "Cancel" : "+ Add Match"}
         </button>
       )}
@@ -80,15 +83,20 @@ export default function Matches() {
           </div>
           <div style={{ marginTop: 12}}>
             <label>Location</label>
-            <select value={location} onChange={(e) => setLocation(e.target.value)}>
+            <select value={location} onChange={e => {
+              const loc = e.target.value;
+              setLocation(loc);
+              if (loc === "Home" && club?.city) setCity(club.city);
+              else if (loc !== "Home") setCity("");
+            }}>
               <option value="Home">Home</option>
               <option value="Away">Away</option>
               <option value="Neutral">Neutral</option>
             </select>
           </div>
           <div style={{ marginTop: 12 }}>
-            <label>Ciudad (para el tiempo)</label>
-            <input value={city} onChange={e => setCity(e.target.value)} placeholder="ej. Pisa, Roma..." />
+            <label>City (for weather)</label>
+            <input value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. A Coruña" />
           </div>
           <button type="submit" disabled={saving} style={{ marginTop: 12 }}>
             {saving ? "Saving..." : "Save Match"}

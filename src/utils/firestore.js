@@ -43,6 +43,10 @@ export async function joinClub(code, userId, email) {
   return { clubId: clubDoc.id, role };
 }
 
+export async function updateClub(clubId, data) {
+  await updateDoc(doc(db, "clubs", clubId), data);
+}
+
 export async function getClubMembersDetails(members) {
   const uids = Object.keys(members);
   const details = await Promise.all(

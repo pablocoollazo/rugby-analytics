@@ -1,18 +1,20 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { getClubMembersDetails, updateMemberRole, getClubPlayers, relinkPlayer } from "../utils/firestore";
+import { getClubMembersDetails, updateMemberRole, getClubPlayers, relinkPlayer, updateClub } from "../utils/firestore";
 
 const ROLES = ["admin", "coach", "player"];
 
 export default function ClubMembers() {
-  const { club, role, user } = useAuth();
+  const { club, role, user, updateClubData } = useAuth();
   const navigate = useNavigate();
   const [members, setMembers] = useState([]);
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [relinkingUid, setRelinkingUid] = useState(null);
   const [selectedNewPlayer, setSelectedNewPlayer] = useState("");
+  const [homeCity, setHomeCity] = useState(club?.city || "");
+  const [savingCity, setSavingCity] = useState(false);
 
   useEffect(() => {
     if (!club) return;
@@ -25,6 +27,13 @@ export default function ClubMembers() {
       setLoading(false);
     });
   }, [club]);
+
+  async function handleSaveCity() {
+    setSavingCity(true);
+    await updateClub(club.clubId, { city: homeCity.trim() });
+    updateClubData({ city: homeCity.trim() });
+    setSavingCity(false);
+  }
 
   async function handleRoleChange(uid, newRole) {
     await updateMemberRole(club.clubId, uid, newRole);
@@ -72,6 +81,22 @@ export default function ClubMembers() {
           <span style={{ color: "#555" }}>Player code: </span>
           <strong style={{ fontFamily: "monospace", fontSize: 16 }}>{club.playerCode}</strong>
           <span style={{ marginLeft: 8, color: "#888", fontSize: 12 }}>— share with squad members</span>
+        </div>
+      </div>
+
+      {/* Home city */}
+      <div style={{ background: "#f5f5f5", borderRadius: 8, padding: "14px 18px", marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Home city (for weather)</div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            value={homeCity}
+            onChange={e => setHomeCity(e.target.value)}
+            placeholder="e.g. A Coruña"
+            style={{ flex: 1, fontSize: 13 }}
+          />
+          <button onClick={handleSaveCity} disabled={savingCity} style={{ fontSize: 13 }}>
+            {savingCity ? "Saving..." : "Save"}
+          </button>
         </div>
       </div>
 

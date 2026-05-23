@@ -46,8 +46,10 @@ export function AuthProvider({ children }) {
 
   const logout = () => signOut(auth);
 
+  const updateClubData = (data) => setClub(prev => ({ ...prev, ...data }));
+
   return (
-    <AuthContext.Provider value={{ user, club, role, loading, clubLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, club, role, loading, clubLoading, login, register, logout, updateClubData }}>
       {!loading && children}
     </AuthContext.Provider>
   );
