@@ -22,7 +22,7 @@ const THEM_OPTIONS = [
 export default function ScoreSection({ events, addEvent, deleteEvent, scoreUs, canEdit, onSave, saving, savedResult, players, squad }) {
     const [pendingUs, setPendingUs] = useState(null);
     const [pendingPlayerId, setPendingPlayerId] = useState("");
-    const [tryExtras, setTryExtras] = useState({ fromPlay: false, minute: "" });
+    const [tryExtras, setTryExtras] = useState({ minute: "" });
 
     const scoreThem = useMemo(() =>
         (events || []).filter(e => e.type === "opponent_score").reduce((s, e) => s + (e.points || 0), 0)
@@ -43,7 +43,7 @@ export default function ScoreSection({ events, addEvent, deleteEvent, scoreUs, c
     function startUsScore(opt) {
         setPendingUs(opt);
         setPendingPlayerId("");
-        setTryExtras({ fromPlay: false, minute: "" });
+        setTryExtras({ minute: "" });
     }
 
     async function confirmUsScore() {
@@ -55,7 +55,6 @@ export default function ScoreSection({ events, addEvent, deleteEvent, scoreUs, c
             await addEvent({
                 ...base,
                 type: "try",
-                fromPlay: tryExtras.fromPlay,
                 ...(tryExtras.minute ? { minute: Number(tryExtras.minute) } : {}),
             });
         } else {
@@ -137,15 +136,10 @@ export default function ScoreSection({ events, addEvent, deleteEvent, scoreUs, c
                                 })}
                             </select>
                             {pendingUs.type === "try" && (
-                                <div style={{ display: "flex", gap: 12, marginBottom: 10, alignItems: "center" }}>
-                                    <label style={{ fontSize: 13, display: "flex", gap: 4, alignItems: "center" }}>
-                                        <input type="checkbox" checked={tryExtras.fromPlay}
-                                            onChange={e => setTryExtras(f => ({ ...f, fromPlay: e.target.checked }))} />
-                                        Set play
-                                    </label>
-                                    <input type="number" placeholder="Min. (opt.)" value={tryExtras.minute}
+                                <div style={{ marginBottom: 10 }}>
+                                    <input type="number" placeholder="Minute (opt.)" value={tryExtras.minute}
                                         onChange={e => setTryExtras(f => ({ ...f, minute: e.target.value }))}
-                                        min="1" max="80" style={{ width: 80, fontSize: 13 }} />
+                                        min="1" max="80" style={{ width: 120, fontSize: 13 }} />
                                 </div>
                             )}
                             <button type="button" onClick={confirmUsScore}
