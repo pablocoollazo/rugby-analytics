@@ -13,6 +13,7 @@ import RuckSection from "../components/matchStats/RuckSection";
 import PlayerEvents from "../components/matchStats/PlayerEvents";
 import PlaysSection from "../components/matchStats/PlaysSection";
 import SubstitutionSection from "../components/matchStats/SubstitutionSection";
+import ScoreSection from "../components/matchStats/ScoreSection";
 
 export default function MatchDetails() {
     const { id } = useParams();
@@ -23,8 +24,6 @@ export default function MatchDetails() {
     const [docStats, setDocStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [pointsFor, setPointsFor] = useState("");
-    const [pointsAgainst, setPointsAgainst] = useState("");
     const [weather, setWeather] = useState(null);
 
     const { stats: eventStats, events, addEvent, deleteEvent } = useMatchEvents(id);
@@ -48,25 +47,35 @@ export default function MatchDetails() {
             const clubPlayers = await getClubPlayers(club.clubId);
             setAllPlayers(clubPlayers);
             const existing = await getStats(id);
-            if (existing) {
-                setDocStats(existing);
-                setPointsFor(existing.pointsFor || "");
-                setPointsAgainst(existing.pointsAgainst || "");
-            }
+            if (existing) setDocStats(existing);
             setLoading(false);
         }
         if (club?.clubId) load();
     }, [id, club]);
 
-    async function handleSaveResult(e) {
-        e.preventDefault();
+    const scoreUs = useMemo(() =>
+        (events || []).reduce((sum, ev) => {
+            if (ev.type === "try") return sum + 5;
+            if (ev.type === "kick_at_goal_made") {
+                return sum + (ev.kickType === "penalty" || ev.kickType === "dropgoal" ? 3 : 2);
+            }
+            return sum;
+        }, 0)
+    , [events]);
+
+    async function handleSaveResult() {
         setSaving(true);
-        const pf = Number(pointsFor);
-        const pa = Number(pointsAgainst);
-        const result = pf > pa ? "Win" : pf < pa ? "Loss" : "Draw";
-        const updated = { ...(docStats || {}), pointsFor: pf, pointsAgainst: pa, result };
-        await setStats(id, updated);
+        const scoreThem = (events || [])
+            .filter(e => e.type === "opponent_score")
+            .reduce((s, e) => s + (e.points || 0), 0);
+        const result = scoreUs > scoreThem ? "Win" : scoreUs < scoreThem ? "Loss" : "Draw";
+        const updated = { ...(docStats || {}), pointsFor: scoreUs, pointsAgainst: scoreThem, result };
+        await Promise.all([
+            setStats(id, updated),
+            updateMatch(id, { pointsFor: scoreUs, pointsAgainst: scoreThem, result }),
+        ]);
         setDocStats(updated);
+        setMatch(prev => ({ ...prev, pointsFor: scoreUs, pointsAgainst: scoreThem, result }));
         setSaving(false);
     }
 
@@ -128,26 +137,18 @@ export default function MatchDetails() {
             </Section>
 
             <Section title="Result">
-                {docStats?.result && (
-                    <p style={{ marginBottom: 12 }}>
-                        Result: <strong style={{ color: docStats.result === "Win" ? "green" : docStats.result === "Loss" ? "red" : "gray" }}>{docStats.result}</strong> · Us: <strong>{docStats.pointsFor}</strong> · Them: <strong>{docStats.pointsAgainst}</strong>
-                    </p>
-                )}
-                {canEdit && (
-                    <form onSubmit={handleSaveResult} style={{ marginTop: 12 }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 8 }}>
-                            <div>
-                                <label>Us</label>
-                                <input type="number" value={pointsFor} onChange={e => setPointsFor(e.target.value)} min="0" required />
-                            </div>
-                            <div>
-                                <label>Them</label>
-                                <input type="number" value={pointsAgainst} onChange={e => setPointsAgainst(e.target.value)} min="0" required />
-                            </div>
-                        </div>
-                        <button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Result"}</button>
-                    </form>
-                )}
+                <ScoreSection
+                    events={events}
+                    addEvent={addEvent}
+                    deleteEvent={deleteEvent}
+                    scoreUs={scoreUs}
+                    canEdit={canEdit}
+                    onSave={handleSaveResult}
+                    saving={saving}
+                    savedResult={docStats?.result}
+                    players={matchPlayers}
+                    squad={effectiveSquad}
+                />
             </Section>
 
             <Section title="Scrums"><ScrumSection {...sharedProps} /></Section>

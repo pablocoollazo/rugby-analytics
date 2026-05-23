@@ -13,6 +13,7 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
     const [tryForm, setTryForm] = useState({ fromPlay: false, minute: "" });
     const [penaltyReason, setPenaltyReason] = useState("scrum");
     const [kickForm, setKickForm] = useState({ rating: "good", inTouch: false, is5022: false, distance: "" });
+    const [kickMissedType, setKickMissedType] = useState("conversion");
 
     if (!players?.length) return <p style={{ color: "#999" }}>No players in squad.</p>;
 
@@ -206,25 +207,6 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                         </div>
                     </div>
 
-                    {/* Try */}
-                    <div style={{ marginBottom: 12 }}>
-                        <small style={{ color: "#1e40af", fontWeight: 700, letterSpacing: 0.5 }}>TRY</small>
-                        <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center", flexWrap: "wrap" }}>
-                            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}>
-                                <input type="checkbox" checked={tryForm.fromPlay}
-                                    onChange={e => setTryForm(f => ({ ...f, fromPlay: e.target.checked }))} />
-                                Set play
-                            </label>
-                            <input type="number" placeholder="Min. (opt.)" value={tryForm.minute}
-                                onChange={e => setTryForm(f => ({ ...f, minute: e.target.value }))}
-                                min="1" max="80" style={{ width: 80, fontSize: 13 }} />
-                            <button type="button" onClick={addTry}
-                                style={{ padding: "8px 16px", background: "#7c3aed", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-                                + Try
-                            </button>
-                        </div>
-                    </div>
-
                     {/* Penalty */}
                     <div style={{ marginBottom: 12 }}>
                         <small style={{ color: "#1e40af", fontWeight: 700, letterSpacing: 0.5 }}>PENALTY</small>
@@ -269,17 +251,19 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                         </div>
                     </div>
 
-                    {/* Kick at goal — kickers only */}
+                    {/* Kick at goal missed — kickers only */}
                     {selectedPlayer.isKicker && (
                         <div style={{ marginBottom: selectedPlayer.isThrower ? 12 : 0 }}>
-                            <small style={{ color: "#1e40af", fontWeight: 700, letterSpacing: 0.5 }}>KICK AT GOAL</small>
-                            <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                                <button type="button" onClick={() => addWithPosition({ type: "kick_at_goal_made", playerId: selectedId })}
-                                    style={{ flex: 1, padding: "10px 0", background: "#16a34a", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-                                    Made
-                                </button>
-                                <button type="button" onClick={() => addWithPosition({ type: "kick_at_goal_missed", playerId: selectedId })}
-                                    style={{ flex: 1, padding: "10px 0", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                            <small style={{ color: "#1e40af", fontWeight: 700, letterSpacing: 0.5 }}>KICK MISSED</small>
+                            <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
+                                <select value={kickMissedType} onChange={e => setKickMissedType(e.target.value)} style={{ fontSize: 13, flex: 1 }}>
+                                    <option value="conversion">Conversion</option>
+                                    <option value="penalty">Penalty kick</option>
+                                    <option value="dropgoal">Drop goal</option>
+                                </select>
+                                <button type="button"
+                                    onClick={() => addWithPosition({ type: "kick_at_goal_missed", playerId: selectedId, kickType: kickMissedType })}
+                                    style={{ padding: "10px 14px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
                                     Missed
                                 </button>
                             </div>
@@ -324,8 +308,8 @@ function formatEventLabel(ev) {
         tackle_won:          "Tackle won",
         tackle_lost:         "Tackle lost",
         tackle_missed:       "Tackle missed",
-        kick_at_goal_made:   "Kick at goal — made",
-        kick_at_goal_missed: "Kick at goal — missed",
+        kick_at_goal_made:   `Kick at goal — made (${ev.kickType || "conversion"})`,
+        kick_at_goal_missed: `Kick at goal — missed (${ev.kickType || "conversion"})`,
         play_kick:           `Play kick — ${ev.rating}, ${ev.distance}m${ev.inTouch ? (ev.is5022 ? " (50/22)" : " touch") : ""}`,
         penalty:             `Penalty — ${ev.reason}`,
         lineout_error:       "Lineout throwing error",
