@@ -63,7 +63,7 @@ export default function Analysis() {
             if (!agg[ev.playerId]) agg[ev.playerId] = {
                 tw: 0, tl: 0, tm: 0, tries: 0,
                 kMade: 0, kTotal: 0,
-                pkTotal: 0, pkDist: 0, pkIn: 0, pk5022: 0,
+                pkTotal: 0, pkGood: 0, pkDist: 0, pkIn: 0, pk5022: 0,
                 penCount: 0, le: 0,
             };
             const s = agg[ev.playerId];
@@ -75,6 +75,7 @@ export default function Analysis() {
             if (ev.type === "kick_at_goal_missed") s.kTotal++;
             if (ev.type === "play_kick") {
                 s.pkTotal++;
+                if (ev.rating === "good") s.pkGood++;
                 s.pkDist += ev.distance || 0;
                 if (ev.inTouch) s.pkIn++;
                 if (ev.is5022)  s.pk5022++;
@@ -219,7 +220,7 @@ export default function Analysis() {
                                             </td>
                                             <td style={TD}>
                                                 {s.pkTotal > 0
-                                                    ? `${s.pkTotal} · ${s.pkDist}m${s.pk5022 > 0 ? ` · ${s.pk5022}×50/22` : ""}`
+                                                    ? `${s.pkGood}/${s.pkTotal} · ${s.pkDist}m${s.pkIn > 0 ? ` · ${s.pkIn}T` : ""}${s.pk5022 > 0 ? ` · ${s.pk5022}×50/22` : ""}`
                                                     : "—"}
                                             </td>
                                             <td style={TD}>{s.penCount || "—"}</td>
