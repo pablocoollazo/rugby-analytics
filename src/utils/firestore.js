@@ -51,9 +51,16 @@ export async function removeMemberFromClub(clubId, uid) {
   const clubSnap = await getDoc(doc(db, "clubs", clubId));
   const members = { ...clubSnap.data().members };
   delete members[uid];
+
+  // Unlink any player profile that was linked to this account
+  const linkedSnap = await getDocs(
+    query(collection(db, "players"), where("clubId", "==", clubId), where("userId", "==", uid))
+  );
+
   await Promise.all([
     updateDoc(doc(db, "clubs", clubId), { members }),
     deleteDoc(doc(db, "users", uid)),
+    ...linkedSnap.docs.map(d => updateDoc(d.ref, { userId: null })),
   ]);
 }
 

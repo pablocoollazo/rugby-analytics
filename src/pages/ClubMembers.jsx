@@ -42,6 +42,9 @@ export default function ClubMembers() {
     if (!confirm(`Remove ${email} from the club? This cannot be undone.`)) return;
     await removeMemberFromClub(club.clubId, uid);
     setMembers(prev => prev.filter(m => m.uid !== uid));
+    // Refresh players so any unlinked profile appears in "Squad without account"
+    const updated = await getClubPlayers(club.clubId);
+    setPlayers(updated);
   }
 
   function getLinkedPlayer(uid) {
