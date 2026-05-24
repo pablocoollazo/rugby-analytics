@@ -152,11 +152,8 @@ export default function MatchDetails() {
     if (loading) return <p>Loading...</p>;
 
     return (
-        <div style={{ maxWidth: 600, margin: "40px auto", padding: "0 20px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h1>{match?.rival}</h1>
-                <button onClick={() => navigate("/matches")}>Back</button>
-            </div>
+        <div className="page">
+            <h1>{match?.rival}</h1>
             <p>{match?.date} · {match?.location}{match?.city ? ` · ${match.city}` : ""}</p>
             {weather && <WeatherBadge weather={weather} />}
 
@@ -202,8 +199,8 @@ export default function MatchDetails() {
 
 function Section({ title, children }) {
     return (
-        <div className="card" style={{ background: "#f5f5f5", padding: 20, borderRadius: 8, marginBottom: 20 }}>
-            <h2 style={{ marginTop: 0, marginBottom: 16 }}>{title}</h2>
+        <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+            <h2 style={{ marginBottom: 14 }}>{title}</h2>
             {children}
         </div>
     );

@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { getClubMembersDetails, updateMemberRole, getClubPlayers, relinkPlayer, updateClub } from "../utils/firestore";
 
 const ROLES = ["admin", "coach", "player"];
 
 export default function ClubMembers() {
   const { club, role, user, updateClubData } = useAuth();
-  const navigate = useNavigate();
   const [members, setMembers] = useState([]);
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,11 +62,8 @@ export default function ClubMembers() {
   if (role !== "admin") return <p style={{ padding: 40 }}>Access denied.</p>;
 
   return (
-    <div style={{ maxWidth: 600, margin: "40px auto", padding: "0 20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Club members</h1>
-        <button onClick={() => navigate("/")}>Back</button>
-      </div>
+    <div className="page">
+      <h1>Club members</h1>
 
       {/* Codes */}
       <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8, padding: "14px 18px", marginBottom: 20, fontSize: 14 }}>

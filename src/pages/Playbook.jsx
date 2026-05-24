@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { getClubPlaybook, createPlay, deletePlay } from "../utils/firestore";
 
 const JERSEYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
 
 export default function Playbook() {
     const { club, role } = useAuth();
-    const navigate = useNavigate();
     const [plays, setPlays] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -50,11 +48,8 @@ export default function Playbook() {
     const canEdit = role === "admin" || role === "coach";
 
     return (
-        <div style={{ maxWidth: 600, margin: "40px auto", padding: "0 20px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h1>Playbook</h1>
-                <button onClick={() => navigate("/")}>Back</button>
-            </div>
+        <div className="page">
+            <h1>Playbook</h1>
 
             {canEdit && (
                 <button onClick={() => setShowForm(!showForm)} style={{ marginBottom: 20 }}>

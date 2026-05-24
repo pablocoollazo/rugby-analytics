@@ -135,7 +135,7 @@ export default function Analysis() {
     if (completed.length === 0) return <p style={{ padding: 40 }}>No hay partidos completados aún.</p>;
 
     return (
-        <div style={{ maxWidth: 800, margin: "40px auto", padding: "0 20px" }}>
+        <div className="page">
             <h1>Analysis</h1>
 
             {/* Resumen */}
@@ -272,8 +272,8 @@ const TD = { padding: "7px 10px" };
 
 function Section({ title, children }) {
     return (
-        <div style={{ background: "#f5f5f5", padding: 20, borderRadius: 8, marginBottom: 20 }}>
-            <h2 style={{ marginTop: 0, marginBottom: 16, fontSize: 16 }}>{title}</h2>
+        <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+            <h2 style={{ marginBottom: 14 }}>{title}</h2>
             {children}
         </div>
     );

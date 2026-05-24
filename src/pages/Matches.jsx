@@ -56,11 +56,8 @@ export default function Matches() {
   const canEdit = role === "admin" || role === "coach";
 
   return (
-    <div style={{ maxWidth: 600, margin: "40px auto", padding: "0 20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Matches</h1>
-        <button onClick={() => navigate("/")}>Back</button>
-      </div>
+    <div className="page">
+      <h1>Matches</h1>
 
       {canEdit && (
         <button onClick={() => {

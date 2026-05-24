@@ -1,21 +1,32 @@
-import { Link } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-function Navbar() {
-  const { role, logout } = useAuth();
+export default function Navbar() {
+  const { club, role, logout } = useAuth();
+  const navigate = useNavigate();
+
+  async function handleLogout() {
+    await logout();
+    navigate("/login");
+  }
+
   return (
-    <nav>
-      <Link to="/">Home</Link> |{" "}
-      <Link to="/players">Players</Link> |{" "}
-      <Link to="/matches">Matches</Link> |{" "}
-      <Link to="/playbook">Playbook</Link> |{" "}
-      <Link to="/analysis">Analysis</Link>
-      {role === "admin" && (
-        <> | <Link to="/club">Club</Link></>
-      )}
-      {" "}| <button onClick={logout} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>Logout</button>
+    <nav className="navbar">
+      <NavLink to="/" end className="nav-brand">
+        🏉 {club?.name || "Rugby Analytics"}
+      </NavLink>
+      <div className="nav-links">
+        <NavLink to="/matches">Partidos</NavLink>
+        <NavLink to="/players">Jugadores</NavLink>
+        <NavLink to="/analysis">Análisis</NavLink>
+        <NavLink to="/playbook">Jugadas</NavLink>
+        {role === "admin" && <NavLink to="/club">Club</NavLink>}
+      </div>
+      <div className="nav-right">
+        <button onClick={handleLogout} style={{ background: "none", border: "none", color: "var(--muted)", padding: "5px 8px" }}>
+          Salir
+        </button>
+      </div>
     </nav>
   );
 }
-
-export default Navbar;

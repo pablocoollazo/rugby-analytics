@@ -17,41 +17,39 @@ export default function Login() {
     try {
       await login(email, password);
       navigate("/");
-    } catch (err) {
+    } catch {
       setError("Email or password incorrect");
     }
     setLoading(false);
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: "100px auto", padding: "0 20px" }}>
-      <h1>Rugby Analytics</h1>
-      <h2>Log In</h2>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Log in"}
-        </button>
-      </form>
-      <p>Don't have an account? <Link to="/register">Sign up</Link></p>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100svh", padding: 24, background: "var(--bg)" }}>
+      <div style={{ marginBottom: 32, textAlign: "center" }}>
+        <span style={{ fontSize: 40 }}>🏉</span>
+        <h1 style={{ margin: "8px 0 4px" }}>Rugby Analytics</h1>
+        <p>Match tracking and analytics</p>
+      </div>
+      <div className="card" style={{ width: "100%", maxWidth: 380, padding: 28 }}>
+        <h2 style={{ marginBottom: 20 }}>Log in</h2>
+        {error && <p style={{ color: "var(--red)", marginBottom: 14, fontSize: 13 }}>{error}</p>}
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 14 }}>
+            <label>Email</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required style={{ width: "100%" }} />
+          </div>
+          <div style={{ marginBottom: 20 }}>
+            <label>Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={{ width: "100%" }} />
+          </div>
+          <button type="submit" disabled={loading} style={{ width: "100%", padding: "9px 0", background: "var(--blue)", color: "#fff", border: "none", borderRadius: "var(--r-sm)", fontWeight: 600 }}>
+            {loading ? "Logging in..." : "Log in"}
+          </button>
+        </form>
+        <p style={{ marginTop: 16, textAlign: "center" }}>
+          No account? <Link to="/register" style={{ color: "var(--blue)" }}>Sign up</Link>
+        </p>
+      </div>
     </div>
   );
 }
