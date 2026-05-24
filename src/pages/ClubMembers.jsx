@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { getClubMembersDetails, updateMemberRole, getClubPlayers, relinkPlayer, updateClub } from "../utils/firestore";
+import { getClubMembersDetails, updateMemberRole, getClubPlayers, relinkPlayer, updateClub, removeMemberFromClub } from "../utils/firestore";
 
 const ROLES = ["admin", "coach", "player"];
 
@@ -36,6 +36,12 @@ export default function ClubMembers() {
   async function handleRoleChange(uid, newRole) {
     await updateMemberRole(club.clubId, uid, newRole);
     setMembers(prev => prev.map(m => m.uid === uid ? { ...m, role: newRole } : m));
+  }
+
+  async function handleRemoveMember(uid, email) {
+    if (!confirm(`Remove ${email} from the club? This cannot be undone.`)) return;
+    await removeMemberFromClub(club.clubId, uid);
+    setMembers(prev => prev.filter(m => m.uid !== uid));
   }
 
   function getLinkedPlayer(uid) {
@@ -153,14 +159,23 @@ export default function ClubMembers() {
                         </div>
                       )}
                     </div>
-                    <select
-                      value={m.role}
-                      onChange={e => handleRoleChange(m.uid, e.target.value)}
-                      disabled={isSelf}
-                      style={{ marginLeft: 12 }}
-                    >
-                      {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                    </select>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: 12, flexShrink: 0 }}>
+                      <select
+                        value={m.role}
+                        onChange={e => handleRoleChange(m.uid, e.target.value)}
+                        disabled={isSelf}
+                      >
+                        {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                      {!isSelf && (
+                        <button
+                          onClick={() => handleRemoveMember(m.uid, m.email)}
+                          style={{ fontSize: 12, color: "#dc2626", background: "none", border: "1px solid #fca5a5", borderRadius: 5, padding: "5px 10px", cursor: "pointer" }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

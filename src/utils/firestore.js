@@ -47,6 +47,16 @@ export async function updateClub(clubId, data) {
   await updateDoc(doc(db, "clubs", clubId), data);
 }
 
+export async function removeMemberFromClub(clubId, uid) {
+  const clubSnap = await getDoc(doc(db, "clubs", clubId));
+  const members = { ...clubSnap.data().members };
+  delete members[uid];
+  await Promise.all([
+    updateDoc(doc(db, "clubs", clubId), { members }),
+    deleteDoc(doc(db, "users", uid)),
+  ]);
+}
+
 export async function getClubMembersDetails(members) {
   const uids = Object.keys(members);
   const details = await Promise.all(
