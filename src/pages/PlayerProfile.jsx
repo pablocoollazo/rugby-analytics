@@ -22,14 +22,11 @@ export default function PlayerProfile() {
                 getClubMatches(club.clubId),
                 getClubPlayers(club.clubId),
             ]);
-
-            // Players can only view their own profile
             if (role === "player") {
                 const ownPlayer = players.find(p => p.userId === user.uid);
                 if (!ownPlayer) { navigate("/"); return; }
                 if (ownPlayer.id !== id) { navigate(`/players/${ownPlayer.id}`, { replace: true }); return; }
             }
-
             const found = players.find(p => p.id === id);
             setPlayer(found || null);
             setMatches(ms);
@@ -41,13 +38,11 @@ export default function PlayerProfile() {
         if (club?.clubId) load();
     }, [id, club, role, user]);
 
-    // Partidos en los que el jugador tiene al menos un evento
     const playerMatches = useMemo(() =>
         matches.filter(m => (eventsMap[m.id] || []).some(ev => ev.playerId === id))
             .sort((a, b) => a.date.localeCompare(b.date))
     , [matches, eventsMap, id]);
 
-    // Stats acumuladas totales
     const totals = useMemo(() => {
         const s = { tw: 0, tl: 0, tm: 0, tries: 0, kMade: 0, kTotal: 0, pkTotal: 0, pkGood: 0, pkDist: 0, pkIn: 0, pk5022: 0, penCount: 0, le: 0 };
         Object.values(eventsMap).flat()
@@ -72,90 +67,77 @@ export default function PlayerProfile() {
         return s;
     }, [eventsMap, id]);
 
-    // Datos por partido para la gráfica de progresión de placajes
     const tackleProgression = useMemo(() =>
         playerMatches.map(m => {
             const evs = (eventsMap[m.id] || []).filter(ev => ev.playerId === id);
             return {
                 name: `vs ${m.rival}`,
-                Ganados:  evs.filter(e => e.type === "tackle_won").length,
-                Perdidos: evs.filter(e => e.type === "tackle_lost").length,
-                Fallados: evs.filter(e => e.type === "tackle_missed").length,
+                Won:    evs.filter(e => e.type === "tackle_won").length,
+                Lost:   evs.filter(e => e.type === "tackle_lost").length,
+                Missed: evs.filter(e => e.type === "tackle_missed").length,
             };
         })
     , [playerMatches, eventsMap, id]);
 
-    if (loading) return <p style={{ padding: 40 }}>Cargando...</p>;
-    if (!player)  return <p style={{ padding: 40 }}>Jugador no encontrado.</p>;
+    if (loading) return <p style={{ padding: 40 }}>Loading...</p>;
+    if (!player)  return <p style={{ padding: 40 }}>Player not found.</p>;
 
     const totalTackles = totals.tw + totals.tl + totals.tm;
 
     return (
-        <div style={{ maxWidth: 700, margin: "40px auto", padding: "0 20px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h1>{player.displayName}</h1>
-                <button onClick={() => navigate("/players")}>Volver</button>
-            </div>
+        <div className="page">
+            <h1>{player.displayName}</h1>
 
-            {/* Info básica */}
-            <div style={{ background: "#f5f5f5", borderRadius: 8, padding: "14px 18px", marginBottom: 20, fontSize: 14 }}>
-                <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-                    <span><strong>Posición:</strong> {player.mainPosition}</span>
+            <div className="card" style={{ padding: "14px 18px", marginBottom: 16 }}>
+                <div style={{ display: "flex", gap: 24, flexWrap: "wrap", fontSize: 13 }}>
+                    <span><strong>Position:</strong> {player.mainPosition}</span>
                     {player.altPositions?.length > 0 && (
-                        <span><strong>También:</strong> {player.altPositions.join(", ")}</span>
+                        <span><strong>Also plays:</strong> {player.altPositions.join(", ")}</span>
                     )}
                     {player.dateOfBirth && (
-                        <span><strong>Fecha nac.:</strong> {new Date(player.dateOfBirth).toLocaleDateString("es-ES")}</span>
+                        <span><strong>DOB:</strong> {new Date(player.dateOfBirth).toLocaleDateString("en-GB")}</span>
                     )}
-                    <span><strong>Partidos:</strong> {playerMatches.length}</span>
+                    <span><strong>Matches:</strong> {playerMatches.length}</span>
                 </div>
                 {(player.isThrower || player.isKicker) && (
-                    <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
-                        {player.isThrower && <Tag label="Lanzador" color="#dbeafe" />}
-                        {player.isKicker && <Tag label="Pateador" color="#dcfce7" />}
+                    <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
+                        {player.isThrower && <Tag label="Thrower" color="#dbeafe" />}
+                        {player.isKicker  && <Tag label="Kicker"  color="#dcfce7" />}
                     </div>
                 )}
             </div>
 
             {playerMatches.length === 0 && (
-                <p style={{ color: "#999" }}>Sin eventos registrados aún.</p>
+                <p style={{ color: "var(--muted)" }}>No events recorded yet.</p>
             )}
 
             {playerMatches.length > 0 && (
                 <>
-                    {/* Resumen de stats */}
-                    <Section title="Resumen">
+                    <Section title="Summary">
                         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                             {totalTackles > 0 && (
-                                <StatCard label="Placajes W/L/M" value={`${totals.tw}/${totals.tl}/${totals.tm}`} />
+                                <StatCard label="Tackles W/L/M" value={`${totals.tw}/${totals.tl}/${totals.tm}`} />
                             )}
                             {totals.tries > 0 && (
-                                <StatCard label="Ensayos" value={totals.tries} color="#7c3aed" />
+                                <StatCard label="Tries" value={totals.tries} color="#7c3aed" />
                             )}
                             {totals.kTotal > 0 && (
-                                <StatCard
-                                    label="Patadas al palo"
-                                    value={`${totals.kMade}/${totals.kTotal} (${Math.round(totals.kMade / totals.kTotal * 100)}%)`}
-                                />
+                                <StatCard label="Kicks at goal" value={`${totals.kMade}/${totals.kTotal} (${Math.round(totals.kMade / totals.kTotal * 100)}%)`} />
                             )}
                             {totals.pkTotal > 0 && (
-                                <StatCard
-                                    label="Pat. juego"
-                                    value={`${totals.pkGood}/${totals.pkTotal} · ${totals.pkDist}m`}
-                                />
+                                <StatCard label="Play kicks" value={`${totals.pkGood}/${totals.pkTotal} · ${totals.pkDist}m`} />
                             )}
                             {totals.penCount > 0 && (
                                 <StatCard label="Penalties" value={totals.penCount} color="#dc2626" />
                             )}
                             {totals.le > 0 && (
-                                <StatCard label="Err. line-out" value={totals.le} color="#d97706" />
+                                <StatCard label="Lineout errors" value={totals.le} color="#d97706" />
                             )}
                         </div>
                     </Section>
 
-                    {/* Gráfica de placajes por partido */}
                     {tackleProgression.length > 1 && totalTackles > 0 && (
-                        <Section title="Placajes por partido">
+                        <Section title="Tackles per match">
                             <ResponsiveContainer width="100%" height={200}>
                                 <LineChart data={tackleProgression}>
                                     <CartesianGrid strokeDasharray="3 3" />
@@ -163,25 +145,24 @@ export default function PlayerProfile() {
                                     <YAxis allowDecimals={false} />
                                     <Tooltip />
                                     <Legend />
-                                    <Line type="monotone" dataKey="Ganados"  stroke="#16a34a" strokeWidth={2} dot />
-                                    <Line type="monotone" dataKey="Perdidos" stroke="#dc2626" strokeWidth={2} dot />
-                                    <Line type="monotone" dataKey="Fallados" stroke="#d97706" strokeWidth={2} dot />
+                                    <Line type="monotone" dataKey="Won"    stroke="#16a34a" strokeWidth={2} dot />
+                                    <Line type="monotone" dataKey="Lost"   stroke="#dc2626" strokeWidth={2} dot />
+                                    <Line type="monotone" dataKey="Missed" stroke="#d97706" strokeWidth={2} dot />
                                 </LineChart>
                             </ResponsiveContainer>
                         </Section>
                     )}
 
-                    {/* Tabla por partido */}
-                    <Section title="Detalle por partido">
+                    <Section title="Match breakdown">
                         <div style={{ overflowX: "auto" }}>
                             <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
                                 <thead>
-                                    <tr style={{ background: "#e5e7eb", textAlign: "left" }}>
-                                        <th style={TH}>Partido</th>
-                                        <th style={TH}>Fecha</th>
-                                        <th style={TH}>Placajes</th>
-                                        <th style={TH}>Ensayos</th>
-                                        <th style={TH}>Patadas palo</th>
+                                    <tr style={{ background: "var(--bg)", textAlign: "left" }}>
+                                        <th style={TH}>Match</th>
+                                        <th style={TH}>Date</th>
+                                        <th style={TH}>Tackles</th>
+                                        <th style={TH}>Tries</th>
+                                        <th style={TH}>Kicks at goal</th>
                                         <th style={TH}>Penalties</th>
                                     </tr>
                                 </thead>
@@ -196,7 +177,7 @@ export default function PlayerProfile() {
                                         const kTotal = kMade + evs.filter(e => e.type === "kick_at_goal_missed").length;
                                         const pens = evs.filter(e => e.type === "penalty").length;
                                         return (
-                                            <tr key={m.id} style={{ borderBottom: "1px solid #e5e7eb", cursor: "pointer" }}
+                                            <tr key={m.id} style={{ borderBottom: "1px solid var(--border)", cursor: "pointer" }}
                                                 onClick={() => navigate(`/matches/${m.id}`)}>
                                                 <td style={TD}>vs {m.rival}</td>
                                                 <td style={TD}>{m.date}</td>
@@ -222,8 +203,8 @@ const TD = { padding: "7px 10px" };
 
 function Section({ title, children }) {
     return (
-        <div style={{ background: "#f5f5f5", padding: 20, borderRadius: 8, marginBottom: 20 }}>
-            <h2 style={{ marginTop: 0, marginBottom: 16, fontSize: 16 }}>{title}</h2>
+        <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+            <h2 style={{ marginBottom: 14 }}>{title}</h2>
             {children}
         </div>
     );
@@ -231,9 +212,9 @@ function Section({ title, children }) {
 
 function StatCard({ label, value, color }) {
     return (
-        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: "12px 18px", textAlign: "center", minWidth: 90 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: color || "#111" }}>{value}</div>
-            <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{label}</div>
+        <div style={{ border: "1px solid var(--border)", borderRadius: "var(--r)", padding: "12px 18px", textAlign: "center", minWidth: 90 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: color || "var(--text)" }}>{value}</div>
+            <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{label}</div>
         </div>
     );
 }

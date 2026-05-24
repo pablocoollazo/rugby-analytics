@@ -135,7 +135,7 @@ export default function Players() {
       )}
 
       {showForm && (
-        <form onSubmit={handleCreate} className="card" style={{ background: "#f5f5f5", padding: 20, borderRadius: 8, marginBottom: 20 }}>
+        <form onSubmit={handleCreate} className="card" style={{ padding: 20, marginBottom: 20 }}>
           <div>
             <label>Name</label>
             <input value={name} onChange={e => setName(e.target.value)} required />
@@ -223,7 +223,7 @@ export default function Players() {
       ) : (
         <div>
           {players.map(p => (
-            <div key={p.id} className="card" style={{ background: "#f5f5f5", padding: 16, borderRadius: 8, marginBottom: 12 }}>
+            <div key={p.id} className="card" style={{ padding: 16, marginBottom: 12 }}>
               {editingId === p.id ? (
                 <div>
                   <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>

@@ -58,7 +58,7 @@ export default function Playbook() {
             )}
 
             {showForm && (
-                <form onSubmit={handleCreate} className="card" style={{ background: "#f5f5f5", padding: 20, borderRadius: 8, marginBottom: 20 }}>
+                <form onSubmit={handleCreate} className="card" style={{ padding: 20, marginBottom: 20 }}>
                     <div>
                         <label>Play name</label>
                         <input value={name} onChange={e => setName(e.target.value)} required
@@ -101,7 +101,7 @@ export default function Playbook() {
             ) : (
                 <div>
                     {plays.map(play => (
-                        <div key={play.id} className="card" style={{ background: "#f5f5f5", padding: 16, borderRadius: 8, marginBottom: 12 }}>
+                        <div key={play.id} className="card" style={{ padding: 16, marginBottom: 12 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <strong>{play.name}</strong>
                                 {canEdit && (

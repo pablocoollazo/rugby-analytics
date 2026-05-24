@@ -80,7 +80,7 @@ export default function ClubMembers() {
       </div>
 
       {/* Home city */}
-      <div style={{ background: "#f5f5f5", borderRadius: 8, padding: "14px 18px", marginBottom: 20 }}>
+      <div style={{ padding: "14px 18px", marginBottom: 20 }}>
         <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Home city (for weather)</div>
         <div style={{ display: "flex", gap: 8 }}>
           <input
@@ -107,7 +107,7 @@ export default function ClubMembers() {
               const isSelf = m.uid === user.uid;
               const isRelinking = relinkingUid === m.uid;
               return (
-                <div key={m.uid} className="card" style={{ background: "#f5f5f5", padding: 16, borderRadius: 8, marginBottom: 12 }}>
+                <div key={m.uid} className="card" style={{ padding: 16, marginBottom: 12 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div style={{ flex: 1 }}>
                       <strong style={{ fontSize: 14 }}>{m.email}</strong>
