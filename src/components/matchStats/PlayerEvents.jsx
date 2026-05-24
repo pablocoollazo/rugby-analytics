@@ -13,7 +13,7 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
     const [tryForm, setTryForm] = useState({ fromPlay: false, minute: "" });
     const [penaltyReason, setPenaltyReason] = useState("scrum");
     const [kickForm, setKickForm] = useState({ rating: "good", inTouch: false, is5022: false, distance: "" });
-    const [kickMissedType, setKickMissedType] = useState("conversion");
+    const [kickGoalType, setKickGoalType] = useState("conversion");
 
     if (!players?.length) return <p style={{ color: "#999" }}>No players in squad.</p>;
 
@@ -63,7 +63,6 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
     function summaryLabel(p) {
         const playerEvents = (events || []).filter(e => e.playerId === p.id);
 
-        // Group events by position
         const byPos = {};
         playerEvents.forEach(ev => {
             const pos = ev.position || "?";
@@ -127,8 +126,8 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                 onChange={e => e.target.value ? select(e.target.value) : setSelectedId(null)}
                 style={{ width: "100%", fontSize: 14, marginBottom: selectedPlayer ? 10 : 0 }}
             >
-                <option value="">— Seleccionar jugador —</option>
-                <optgroup label="En el campo">
+                <option value="">— Select player —</option>
+                <optgroup label="On the field">
                     {onField.map(p => {
                         const entry = squad.find(s => s.playerId === p.id);
                         const pos = JERSEY_POSITION[Number(entry?.jersey)] || entry?.position || p.mainPosition;
@@ -140,7 +139,7 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                     })}
                 </optgroup>
                 {offField.length > 0 && (
-                    <optgroup label="Fuera del campo">
+                    <optgroup label="Off the field">
                         {offField.map(p => (
                             <option key={p.id} value={p.id}>{p.displayName}</option>
                         ))}
@@ -148,7 +147,7 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                 )}
             </select>
 
-            {/* Undo-only panel for off-field players */}
+            {/* Panel for off-field players — view stats + undo only if canEdit */}
             {selectedPlayer && !selectedIsOnField && (
                 <div style={{ marginTop: 10, padding: "14px 16px", background: "#f3f4f6", borderRadius: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -159,23 +158,25 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                     <div style={{ marginBottom: 10, fontSize: 13, color: "#555" }}>
                         {summaryLabel(selectedPlayer)}
                     </div>
-                    <small style={{ color: "#888" }}>Fuera del campo — solo se pueden deshacer eventos.</small>
+                    <small style={{ color: "#888" }}>Off the field{canEdit ? " — undo only." : "."}</small>
                     {recentEvents.length > 0 && (
                         <div style={{ marginTop: 10 }}>
                             {recentEvents.map(ev => (
                                 <div key={ev.id} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
                                     <span style={{ fontSize: 13, flex: 1 }}>{formatEventLabel(ev)}</span>
-                                    <button type="button" onClick={() => deleteEvent(ev.id)}
-                                        style={{ fontSize: 11, padding: "2px 8px" }}>✕</button>
+                                    {canEdit && (
+                                        <button type="button" onClick={() => deleteEvent(ev.id)}
+                                            style={{ fontSize: 11, padding: "2px 8px" }}>✕</button>
+                                    )}
                                 </div>
                             ))}
                         </div>
                     )}
-                    {recentEvents.length === 0 && <p style={{ fontSize: 13, color: "#aaa", marginTop: 6 }}>Sin eventos recientes.</p>}
+                    {recentEvents.length === 0 && <p style={{ fontSize: 13, color: "#aaa", marginTop: 6 }}>No recent events.</p>}
                 </div>
             )}
 
-            {/* Action panel for selected player */}
+            {/* Action panel for selected on-field player */}
             {selectedPlayer && canEdit && selectedIsOnField && (
                 <div style={{ marginTop: 10, padding: "14px 16px", background: "#dbeafe", borderRadius: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -184,7 +185,6 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                             style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#555" }}>✕</button>
                     </div>
 
-                    {/* Stats so far */}
                     <div style={{ fontSize: 13, color: "#1e40af", marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid #bfdbfe" }}>
                         {summaryLabel(selectedPlayer)}
                     </div>
@@ -223,7 +223,7 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                     </div>
 
                     {/* Play kick */}
-                    <div style={{ marginBottom: selectedPlayer.isKicker || selectedPlayer.isThrower ? 12 : 0 }}>
+                    <div style={{ marginBottom: 12 }}>
                         <small style={{ color: "#1e40af", fontWeight: 700, letterSpacing: 0.5 }}>PLAY KICK</small>
                         <div style={{ display: "flex", gap: 8, marginTop: 6, alignItems: "center", flexWrap: "wrap" }}>
                             <select value={kickForm.rating} onChange={e => setKickForm(f => ({ ...f, rating: e.target.value }))}
@@ -251,19 +251,24 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                         </div>
                     </div>
 
-                    {/* Kick at goal missed — kickers only */}
+                    {/* Kick at goal — kickers only */}
                     {selectedPlayer.isKicker && (
                         <div style={{ marginBottom: selectedPlayer.isThrower ? 12 : 0 }}>
-                            <small style={{ color: "#1e40af", fontWeight: 700, letterSpacing: 0.5 }}>KICK MISSED</small>
+                            <small style={{ color: "#1e40af", fontWeight: 700, letterSpacing: 0.5 }}>KICK AT GOAL</small>
                             <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
-                                <select value={kickMissedType} onChange={e => setKickMissedType(e.target.value)} style={{ fontSize: 13, flex: 1 }}>
+                                <select value={kickGoalType} onChange={e => setKickGoalType(e.target.value)} style={{ fontSize: 13, flex: 1 }}>
                                     <option value="conversion">Conversion</option>
                                     <option value="penalty">Penalty kick</option>
                                     <option value="dropgoal">Drop goal</option>
                                 </select>
                                 <button type="button"
-                                    onClick={() => addWithPosition({ type: "kick_at_goal_missed", playerId: selectedId, kickType: kickMissedType })}
-                                    style={{ padding: "10px 14px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                                    onClick={() => addWithPosition({ type: "kick_at_goal_made", playerId: selectedId, kickType: kickGoalType })}
+                                    style={{ padding: "9px 12px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                                    Made
+                                </button>
+                                <button type="button"
+                                    onClick={() => addWithPosition({ type: "kick_at_goal_missed", playerId: selectedId, kickType: kickGoalType })}
+                                    style={{ padding: "9px 12px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
                                     Missed
                                 </button>
                             </div>
@@ -283,7 +288,7 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                         </div>
                     )}
 
-                    {/* Recent events for this player */}
+                    {/* Recent events */}
                     {recentEvents.length > 0 && (
                         <div style={{ marginTop: 12, borderTop: "1px solid #bfdbfe", paddingTop: 10 }}>
                             <small style={{ color: "#555" }}>Recent — tap ✕ to undo:</small>

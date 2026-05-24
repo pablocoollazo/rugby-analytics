@@ -19,6 +19,15 @@ const THEM_OPTIONS = [
     { label: "Pen/DG", points: 3 },
 ];
 
+function formatUsLabel(ev) {
+    if (ev.type === "try") return "Try (+5)";
+    if (ev.type === "kick_at_goal_made") {
+        const map = { conversion: "Conversion (+2)", penalty: "Penalty (+3)", dropgoal: "Drop goal (+3)" };
+        return map[ev.kickType] || "Kick (+?)";
+    }
+    return ev.type;
+}
+
 export default function ScoreSection({ events, addEvent, deleteEvent, scoreUs, canEdit, players, squad }) {
     const [pendingUs, setPendingUs] = useState(null);
     const [pendingPlayerId, setPendingPlayerId] = useState("");
@@ -30,6 +39,10 @@ export default function ScoreSection({ events, addEvent, deleteEvent, scoreUs, c
 
     const lastOpponent = useMemo(() =>
         [...(events || [])].reverse().find(e => e.type === "opponent_score")
+    , [events]);
+
+    const lastUs = useMemo(() =>
+        [...(events || [])].reverse().find(e => e.type === "try" || e.type === "kick_at_goal_made")
     , [events]);
 
     const liveResult = scoreUs > scoreThem ? "Win" : scoreUs < scoreThem ? "Loss" : "Draw";
@@ -146,10 +159,19 @@ export default function ScoreSection({ events, addEvent, deleteEvent, scoreUs, c
                         </div>
                     )}
 
+                    {/* Undo last US score */}
+                    {lastUs && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontSize: 13, color: "#555" }}>
+                            <span style={{ flex: 1 }}>Last us: {formatUsLabel(lastUs)}</span>
+                            <button type="button" onClick={() => deleteEvent(lastUs.id)}
+                                style={{ fontSize: 11, padding: "3px 10px" }}>✕ Undo</button>
+                        </div>
+                    )}
+
                     {/* Undo last opponent score */}
                     {lastOpponent && (
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, fontSize: 13, color: "#555" }}>
-                            <span style={{ flex: 1 }}>Last opponent: +{lastOpponent.points} {lastOpponent.label}</span>
+                            <span style={{ flex: 1 }}>Last them: +{lastOpponent.points} {lastOpponent.label}</span>
                             <button type="button" onClick={() => deleteEvent(lastOpponent.id)}
                                 style={{ fontSize: 11, padding: "3px 10px" }}>✕ Undo</button>
                         </div>

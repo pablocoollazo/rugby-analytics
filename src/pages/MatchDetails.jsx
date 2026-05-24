@@ -26,6 +26,7 @@ export default function MatchDetails() {
     const [loading, setLoading] = useState(true);
     const [closing, setClosing] = useState(false);
     const [weather, setWeather] = useState(null);
+    const [tab, setTab] = useState("match");
 
     const { stats: eventStats, events, addEvent, deleteEvent } = useMatchEvents(id);
 
@@ -65,7 +66,7 @@ export default function MatchDetails() {
     , [events]);
 
     async function handleCloseMatch() {
-        if (!confirm("¿Cerrar partido? Los jugadores recibirán una notificación.")) return;
+        if (!confirm("Close match? Players will receive a notification.")) return;
         setClosing(true);
         const scoreThem = (events || [])
             .filter(e => e.type === "opponent_score")
@@ -88,6 +89,8 @@ export default function MatchDetails() {
     }
 
     const canEdit = role === "admin" || role === "coach";
+    const isLocked = match?.status === "completed";
+    const effectiveCanEdit = canEdit && !isLocked;
 
     useEffect(() => {
         if (canEdit) requestPermission();
@@ -106,7 +109,7 @@ export default function MatchDetails() {
             if (status === "completed" && prevStatusRef.current !== "completed") {
                 prevStatusRef.current = "completed";
                 notify(
-                    "📊 Partido finalizado",
+                    "Match closed",
                     `vs ${data?.rival || ""} · ${data?.result || ""} ${data?.pointsFor ?? "?"}–${data?.pointsAgainst ?? "?"}`
                 );
             }
@@ -114,14 +117,11 @@ export default function MatchDetails() {
         return () => unsub();
     }, [id]);
 
-    // squad: array of { playerId, jersey, position, isStarter } (new format)
-    // or array of strings (old format — backwards compat)
     const rawSquad = docStats?.squad || [];
     const squad = rawSquad.length > 0 && typeof rawSquad[0] === "string"
         ? rawSquad.map(id => ({ playerId: id, jersey: "", position: "", isStarter: true }))
         : rawSquad;
 
-    // Apply substitution events on top of initial squad to get current jersey map
     const effectiveSquad = useMemo(() => {
         const jerseyMap = {};
         squad.forEach(s => { const n = Number(s.jersey); if (n >= 1 && n <= 15) jerseyMap[String(n)] = s.playerId; });
@@ -138,7 +138,6 @@ export default function MatchDetails() {
     }, [squad, eventStats.subs]);
 
     const effectivePlayerIds = effectiveSquad.map(s => s.playerId);
-    // Include all player IDs referenced in any event, including playersByJersey in play events
     const eventPlayerIds = [...new Set(events.flatMap(e => {
         const ids = [];
         if (e.playerId) ids.push(e.playerId);
@@ -147,51 +146,80 @@ export default function MatchDetails() {
     }))];
     const allMatchPlayerIds = [...new Set([...effectivePlayerIds, ...eventPlayerIds])];
     const matchPlayers = allMatchPlayerIds.length > 0 ? allPlayers.filter(p => allMatchPlayerIds.includes(p.id)) : allPlayers;
-    const sharedProps = { stats: eventStats, events, addEvent, deleteEvent, canEdit, players: matchPlayers, squad: effectiveSquad };
+    const sharedProps = { stats: eventStats, events, addEvent, deleteEvent, canEdit: effectiveCanEdit, players: matchPlayers, squad: effectiveSquad };
 
     if (loading) return <p>Loading...</p>;
 
+    const TABS = [
+        { key: "match",   label: "Match" },
+        { key: "squad",   label: "Squad" },
+        { key: "players", label: "Players" },
+        { key: "plays",   label: "Plays" },
+    ];
+
     return (
         <div className="page">
-            <h1>{match?.rival}</h1>
-            <p>{match?.date} · {match?.location}{match?.city ? ` · ${match.city}` : ""}</p>
+            <h1>vs {match?.rival}</h1>
+            <p style={{ marginBottom: 8 }}>{match?.date} · {match?.location}{match?.city ? ` · ${match.city}` : ""}</p>
             {weather && <WeatherBadge weather={weather} />}
 
-            <Section title="Squad">
-                <SquadSection squad={squad} allPlayers={allPlayers} canEdit={canEdit} onSave={handleSquadSave} />
-            </Section>
-
-            <Section title="Result">
-                <ScoreSection
-                    events={events}
-                    addEvent={addEvent}
-                    deleteEvent={deleteEvent}
-                    scoreUs={scoreUs}
-                    canEdit={canEdit && match?.status !== "completed"}
-                    players={matchPlayers}
-                    squad={effectiveSquad}
-                />
-            </Section>
-
-            <Section title="Scrums"><ScrumSection {...sharedProps} /></Section>
-            <Section title="Line-outs"><LineoutSection {...sharedProps} /></Section>
-            <Section title="Rucks"><RuckSection {...sharedProps} /></Section>
-            <Section title="Substitutions">
-                <SubstitutionSection {...sharedProps} allPlayers={allPlayers} />
-            </Section>
-            <Section title="Player events"><PlayerEvents {...sharedProps} /></Section>
-            <Section title="Set plays"><PlaysSection {...sharedProps} /></Section>
-
-            {canEdit && match?.status !== "completed" && (
-                <button onClick={handleCloseMatch} disabled={closing}
-                    style={{ width: "100%", padding: "14px 0", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, cursor: closing ? "not-allowed" : "pointer", fontSize: 15, fontWeight: 700, marginBottom: 40 }}>
-                    {closing ? "Cerrando..." : "Cerrar partido"}
-                </button>
-            )}
-            {match?.status === "completed" && (
-                <div style={{ textAlign: "center", padding: 14, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, marginBottom: 40, fontSize: 14, color: "#15803d", fontWeight: 600 }}>
-                    ✓ Partido cerrado
+            {isLocked && (
+                <div style={{ textAlign: "center", padding: 10, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#15803d", fontWeight: 600 }}>
+                    ✓ Match closed · {match.result} {match.pointsFor}–{match.pointsAgainst}
                 </div>
+            )}
+
+            <div className="tabs">
+                {TABS.map(t => (
+                    <button key={t.key} className={`tab-btn${tab === t.key ? " active" : ""}`} onClick={() => setTab(t.key)}>
+                        {t.label}
+                    </button>
+                ))}
+            </div>
+
+            {tab === "match" && (
+                <>
+                    <Section title="Result">
+                        <ScoreSection
+                            events={events}
+                            addEvent={addEvent}
+                            deleteEvent={deleteEvent}
+                            scoreUs={scoreUs}
+                            canEdit={effectiveCanEdit}
+                            players={matchPlayers}
+                            squad={effectiveSquad}
+                        />
+                    </Section>
+                    <Section title="Scrums"><ScrumSection {...sharedProps} /></Section>
+                    <Section title="Line-outs"><LineoutSection {...sharedProps} /></Section>
+                    <Section title="Rucks"><RuckSection {...sharedProps} /></Section>
+                </>
+            )}
+
+            {tab === "squad" && (
+                <>
+                    <Section title="Squad">
+                        <SquadSection squad={squad} allPlayers={allPlayers} canEdit={effectiveCanEdit} onSave={handleSquadSave} />
+                    </Section>
+                    <Section title="Substitutions">
+                        <SubstitutionSection {...sharedProps} allPlayers={allPlayers} />
+                    </Section>
+                </>
+            )}
+
+            {tab === "players" && (
+                <Section title="Player events"><PlayerEvents {...sharedProps} /></Section>
+            )}
+
+            {tab === "plays" && (
+                <Section title="Set plays"><PlaysSection {...sharedProps} /></Section>
+            )}
+
+            {effectiveCanEdit && (
+                <button onClick={handleCloseMatch} disabled={closing}
+                    style={{ width: "100%", padding: "14px 0", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, cursor: closing ? "not-allowed" : "pointer", fontSize: 15, fontWeight: 700, marginTop: 24, marginBottom: 40 }}>
+                    {closing ? "Closing..." : "Close match"}
+                </button>
             )}
         </div>
     );
@@ -208,11 +236,11 @@ function Section({ title, children }) {
 
 function WeatherBadge({ weather }) {
     const icon = {
-        "Lluvia": "🌧",
-        "Llovizna": "🌦",
-        "Viento fuerte": "💨",
-        "Ventoso": "🌬",
-        "Despejado": "☀️",
+        "Rain": "🌧",
+        "Drizzle": "🌦",
+        "Strong wind": "💨",
+        "Windy": "🌬",
+        "Clear": "☀️",
     }[weather.condition] ?? "🌤";
 
     return (

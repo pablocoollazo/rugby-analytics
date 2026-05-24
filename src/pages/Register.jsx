@@ -4,7 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { createClub, joinClub, getUnlinkedPlayers, linkPlayerToUser } from "../utils/firestore";
 
 export default function Register() {
-  const { register } = useAuth();
+  const { register, reloadClub } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
@@ -43,10 +43,12 @@ export default function Register() {
       if (clubOption === "create") {
         const { coachCode, playerCode } = await createClub(clubName, userId, email);
         alert(`Club created!\n\nCoach code: ${coachCode}\nPlayer code: ${playerCode}\n\nShare the right code with each person.`);
+        await reloadClub();
         navigate("/");
       } else {
         const { clubId: id, role } = await joinClub(clubCode.toUpperCase(), userId, email);
         if (role === "coach") {
+          await reloadClub();
           navigate("/");
         } else {
           setClubId(id);
@@ -67,6 +69,7 @@ export default function Register() {
     setLoading(true);
     try {
       await linkPlayerToUser(selectedPlayerId, userId);
+      await reloadClub();
       navigate("/");
     } catch {
       setError("Error linking player profile.");

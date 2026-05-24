@@ -48,8 +48,15 @@ export function AuthProvider({ children }) {
 
   const updateClubData = (data) => setClub(prev => ({ ...prev, ...data }));
 
+  const reloadClub = async () => {
+    if (!auth.currentUser) return;
+    const clubData = await getUserClub(auth.currentUser.uid);
+    setClub(clubData);
+    setRole(clubData?.members?.[auth.currentUser.uid] || null);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, club, role, loading, clubLoading, login, register, logout, updateClubData }}>
+    <AuthContext.Provider value={{ user, club, role, loading, clubLoading, login, register, logout, updateClubData, reloadClub }}>
       {!loading && children}
     </AuthContext.Provider>
   );

@@ -39,16 +39,28 @@ export default function SquadSection({ squad, allPlayers, canEdit, onSave }) {
     function update(playerId, field, value) {
         setEntries(prev => {
             const updated = { ...prev[playerId], [field]: value };
-            if (field === "jersey") {
-                const n = Number(value);
-                if (n >= 1 && n <= 15) {
-                    const autoPos = JERSEY_POSITION[n];
-                    if (autoPos) updated.position = autoPos;
-                }
-            }
             if (field === "isStarter" && !value) {
                 const player = allPlayers.find(p => p.id === playerId);
                 if (player?.mainPosition) updated.position = player.mainPosition;
+            }
+            return { ...prev, [playerId]: updated };
+        });
+    }
+
+    // Called on blur so partial numbers like "4" don't auto-assign mid-type
+    function applyJerseyDefaults(playerId, jerseyValue) {
+        setEntries(prev => {
+            const entry = prev[playerId];
+            if (!entry) return prev;
+            const updated = { ...entry };
+            const n = Number(jerseyValue);
+            if (n >= 1 && n <= 15) {
+                const autoPos = JERSEY_POSITION[n];
+                if (autoPos) updated.position = autoPos;
+            } else if (n > 15) {
+                const player = allPlayers.find(p => p.id === playerId);
+                if (player?.mainPosition) updated.position = player.mainPosition;
+                updated.isStarter = false;
             }
             return { ...prev, [playerId]: updated };
         });
@@ -99,11 +111,15 @@ export default function SquadSection({ squad, allPlayers, canEdit, onSave }) {
                                     {entry && (
                                         <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
                                             <input
-                                                type="number"
+                                                type="text"
+                                                inputMode="numeric"
                                                 placeholder="Jersey #"
                                                 value={entry.jersey}
-                                                onChange={e => update(p.id, "jersey", e.target.value)}
-                                                min="1" max="99"
+                                                onChange={e => {
+                                                    const val = e.target.value.replace(/[^0-9]/g, "");
+                                                    update(p.id, "jersey", val);
+                                                }}
+                                                onBlur={() => applyJerseyDefaults(p.id, entry.jersey)}
                                                 style={{ width: 70, fontSize: 13 }}
                                             />
                                             <select

@@ -6,15 +6,21 @@ import { getClubPlayers, getClubMatches } from "../utils/firestore";
 const ROLE_COLOR = { admin: "#7c3aed", coach: "#2563eb", player: "#16a34a" };
 
 export default function Home() {
-  const { club, role, clubLoading } = useAuth();
+  const { club, role, user, clubLoading } = useAuth();
   const navigate = useNavigate();
   const [playerCount, setPlayerCount] = useState(null);
   const [lastMatch, setLastMatch] = useState(null);
+  const [linkedPlayer, setLinkedPlayer] = useState(undefined); // undefined = not checked yet
 
   useEffect(() => {
     if (clubLoading) return;
     if (!club) { navigate("/register"); return; }
-    getClubPlayers(club.clubId).then(p => setPlayerCount(p.length));
+    getClubPlayers(club.clubId).then(p => {
+      setPlayerCount(p.length);
+      if (role === "player" && user) {
+        setLinkedPlayer(p.find(pl => pl.userId === user.uid) || null);
+      }
+    });
     getClubMatches(club.clubId).then(m => {
       const completed = m.filter(x => x.result);
       if (completed.length) setLastMatch(completed[0]);

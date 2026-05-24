@@ -99,26 +99,26 @@ export default function SubstitutionSection({ stats, addEvent, deleteEvent, canE
 
             {canEdit && !recording && (
                 <button type="button" onClick={openRecording} style={{ marginTop: 8 }}>
-                    + Registrar cambio
+                    + Add substitution
                 </button>
             )}
 
             {canEdit && recording && (
                 <div style={{ marginTop: 12, padding: "14px 16px", background: "#f0fdf4", borderRadius: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                        <strong>Nuevo cambio</strong>
+                        <strong>New substitution</strong>
                         <button type="button" onClick={() => setRecording(false)}
                             style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#555" }}>✕</button>
                     </div>
 
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                        <label style={{ whiteSpace: "nowrap", fontSize: 13 }}>Minuto (opt.)</label>
+                        <label style={{ whiteSpace: "nowrap", fontSize: 13 }}>Minute (opt.)</label>
                         <input type="number" value={minute} onChange={e => setMinute(e.target.value)}
                             min="1" max="80" style={{ width: 60, fontSize: 13 }} />
                     </div>
 
                     {sortedJerseys.length === 0 && (
-                        <p style={{ fontSize: 13, color: "#999" }}>Define la convocatoria primero.</p>
+                        <p style={{ fontSize: 13, color: "#999" }}>Define the squad first.</p>
                     )}
 
                     {sortedJerseys.map(jersey => {
@@ -136,20 +136,20 @@ export default function SubstitutionSection({ stats, addEvent, deleteEvent, canE
                                     onChange={e => setChange(jersey, e.target.value)}
                                     style={{ flex: 1, fontSize: 13, background: needsFilling ? "#fee2e2" : changed ? "#dcfce7" : "#fff" }}
                                 >
-                                    {needsFilling && <option value="" disabled>— selecciona un jugador —</option>}
+                                    {needsFilling && <option value="" disabled>— select a player —</option>}
                                     {allPlayers?.map(p => (
                                         <option key={p.id} value={p.id}>{p.displayName}</option>
                                     ))}
                                 </select>
-                                {needsFilling && <span style={{ fontSize: 11, color: "#dc2626", whiteSpace: "nowrap" }}>Asigna jugador</span>}
+                                {needsFilling && <span style={{ fontSize: 11, color: "#dc2626", whiteSpace: "nowrap" }}>Assign player</span>}
                             </div>
                         );
                     })}
 
                     <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-                        <button type="button" onClick={handleSave} disabled={hasPending}>Guardar cambio</button>
+                        <button type="button" onClick={handleSave} disabled={hasPending}>Save substitution</button>
                         <button type="button" onClick={() => setRecording(false)}
-                            style={{ background: "none" }}>Cancelar</button>
+                            style={{ background: "none" }}>Cancel</button>
                     </div>
 
                     {Object.entries(draft).filter(([j, pid]) => String(pid) !== String(currentMap[j] || "")).length > 0 && (

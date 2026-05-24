@@ -146,3 +146,26 @@ label {
   font-size: 13px;
   color: var(--muted);
 }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.tab-btn {
+  padding: 9px 18px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color .12s;
+}
+.tab-btn:hover { background: none; color: var(--text); }
+.tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
