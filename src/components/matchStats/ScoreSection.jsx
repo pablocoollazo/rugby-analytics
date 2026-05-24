@@ -19,7 +19,7 @@ const THEM_OPTIONS = [
     { label: "Pen/DG", points: 3 },
 ];
 
-export default function ScoreSection({ events, addEvent, deleteEvent, scoreUs, canEdit, onSave, saving, savedResult, players, squad }) {
+export default function ScoreSection({ events, addEvent, deleteEvent, scoreUs, canEdit, players, squad }) {
     const [pendingUs, setPendingUs] = useState(null);
     const [pendingPlayerId, setPendingPlayerId] = useState("");
     const [tryExtras, setTryExtras] = useState({ minute: "" });
@@ -82,9 +82,6 @@ export default function ScoreSection({ events, addEvent, deleteEvent, scoreUs, c
                 <span style={{ background: resultColor, color: "#fff", padding: "3px 14px", borderRadius: 20, fontSize: 13, fontWeight: 600 }}>
                     {liveResult}
                 </span>
-                {savedResult && savedResult !== liveResult && (
-                    <span style={{ marginLeft: 10, fontSize: 12, color: "#999" }}>Saved: {savedResult}</span>
-                )}
             </div>
 
             {canEdit && (
@@ -158,10 +155,6 @@ export default function ScoreSection({ events, addEvent, deleteEvent, scoreUs, c
                         </div>
                     )}
 
-                    <button onClick={onSave} disabled={saving}
-                        style={{ width: "100%", padding: "11px 0", background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, fontWeight: 600 }}>
-                        {saving ? "Saving..." : "Save result"}
-                    </button>
                 </>
             )}
         </div>

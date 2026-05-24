@@ -1,10 +1,11 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { getClubPlayers, getStats, setStats, updateMatch } from "../utils/firestore";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { getWeatherForMatch } from "../utils/weather";
+import { requestPermission, notify } from "../utils/notifications";
 import { useMatchEvents } from "../hooks/useMatchEvents";
 import SquadSection from "../components/matchStats/SquadSection";
 import ScrumSection from "../components/matchStats/ScrumSection";
@@ -23,7 +24,7 @@ export default function MatchDetails() {
     const [allPlayers, setAllPlayers] = useState([]);
     const [docStats, setDocStats] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
+    const [closing, setClosing] = useState(false);
     const [weather, setWeather] = useState(null);
 
     const { stats: eventStats, events, addEvent, deleteEvent } = useMatchEvents(id);
@@ -63,8 +64,9 @@ export default function MatchDetails() {
         }, 0)
     , [events]);
 
-    async function handleSaveResult() {
-        setSaving(true);
+    async function handleCloseMatch() {
+        if (!confirm("¿Cerrar partido? Los jugadores recibirán una notificación.")) return;
+        setClosing(true);
         const scoreThem = (events || [])
             .filter(e => e.type === "opponent_score")
             .reduce((s, e) => s + (e.points || 0), 0);
@@ -72,11 +74,11 @@ export default function MatchDetails() {
         const updated = { ...(docStats || {}), pointsFor: scoreUs, pointsAgainst: scoreThem, result };
         await Promise.all([
             setStats(id, updated),
-            updateMatch(id, { pointsFor: scoreUs, pointsAgainst: scoreThem, result }),
+            updateMatch(id, { pointsFor: scoreUs, pointsAgainst: scoreThem, result, status: "completed" }),
         ]);
         setDocStats(updated);
-        setMatch(prev => ({ ...prev, pointsFor: scoreUs, pointsAgainst: scoreThem, result }));
-        setSaving(false);
+        setMatch(prev => ({ ...prev, pointsFor: scoreUs, pointsAgainst: scoreThem, result, status: "completed" }));
+        setClosing(false);
     }
 
     async function handleSquadSave(squad) {
@@ -86,6 +88,32 @@ export default function MatchDetails() {
     }
 
     const canEdit = role === "admin" || role === "coach";
+
+    useEffect(() => {
+        if (canEdit) requestPermission();
+    }, [canEdit]);
+
+    const prevStatusRef = useRef(undefined);
+    useEffect(() => {
+        if (!id) return;
+        const unsub = onSnapshot(doc(db, "matches", id), (snap) => {
+            const data = snap.data();
+            const status = data?.status || null;
+            if (prevStatusRef.current === undefined) {
+                prevStatusRef.current = status;
+                return;
+            }
+            if (status === "completed" && prevStatusRef.current !== "completed") {
+                prevStatusRef.current = "completed";
+                notify(
+                    "📊 Partido finalizado",
+                    `vs ${data?.rival || ""} · ${data?.result || ""} ${data?.pointsFor ?? "?"}–${data?.pointsAgainst ?? "?"}`
+                );
+            }
+        });
+        return () => unsub();
+    }, [id]);
+
     // squad: array of { playerId, jersey, position, isStarter } (new format)
     // or array of strings (old format — backwards compat)
     const rawSquad = docStats?.squad || [];
@@ -142,10 +170,7 @@ export default function MatchDetails() {
                     addEvent={addEvent}
                     deleteEvent={deleteEvent}
                     scoreUs={scoreUs}
-                    canEdit={canEdit}
-                    onSave={handleSaveResult}
-                    saving={saving}
-                    savedResult={docStats?.result}
+                    canEdit={canEdit && match?.status !== "completed"}
                     players={matchPlayers}
                     squad={effectiveSquad}
                 />
@@ -159,6 +184,18 @@ export default function MatchDetails() {
             </Section>
             <Section title="Player events"><PlayerEvents {...sharedProps} /></Section>
             <Section title="Set plays"><PlaysSection {...sharedProps} /></Section>
+
+            {canEdit && match?.status !== "completed" && (
+                <button onClick={handleCloseMatch} disabled={closing}
+                    style={{ width: "100%", padding: "14px 0", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, cursor: closing ? "not-allowed" : "pointer", fontSize: 15, fontWeight: 700, marginBottom: 40 }}>
+                    {closing ? "Cerrando..." : "Cerrar partido"}
+                </button>
+            )}
+            {match?.status === "completed" && (
+                <div style={{ textAlign: "center", padding: 14, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, marginBottom: 40, fontSize: 14, color: "#15803d", fontWeight: 600 }}>
+                    ✓ Partido cerrado
+                </div>
+            )}
         </div>
     );
 }
