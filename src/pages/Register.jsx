@@ -1,24 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { createClub, joinClub, getUnlinkedPlayers, linkPlayerToUser } from "../utils/firestore";
 
 export default function Register() {
-  const { register, reloadClub } = useAuth();
+  const { register, reloadClub, user } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
+  // If already authenticated (e.g. removed from club), skip account creation
+  const [step, setStep] = useState(user ? 2 : 1);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [userId, setUserId] = useState("");
+  const [userId, setUserId] = useState(user?.uid || "");
   const [clubOption, setClubOption] = useState("");
   const [clubName, setClubName] = useState("");
   const [clubCode, setClubCode] = useState("");
   const [clubId, setClubId] = useState("");
   const [unlinkedPlayers, setUnlinkedPlayers] = useState([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
+
+  // Keep userId in sync if auth state resolves after render
+  useEffect(() => {
+    if (user && !userId) {
+      setUserId(user.uid);
+      setStep(2);
+    }
+  }, [user]);
 
   async function handleAccount(e) {
     e.preventDefault();
@@ -29,8 +38,12 @@ export default function Register() {
       const cred = await register(email, password);
       setUserId(cred.user.uid);
       setStep(2);
-    } catch {
-      setError("Error creating account. Try another email.");
+    } catch (err) {
+      if (err.code === "auth/email-already-in-use") {
+        setError("This email already has an account. Log in first, then you'll be able to rejoin the club.");
+      } else {
+        setError("Error creating account. Try another email.");
+      }
     }
     setLoading(false);
   }
@@ -41,12 +54,12 @@ export default function Register() {
     setLoading(true);
     try {
       if (clubOption === "create") {
-        const { coachCode, playerCode } = await createClub(clubName, userId, email);
+        const { coachCode, playerCode } = await createClub(clubName, userId, email || user?.email || "");
         alert(`Club created!\n\nCoach code: ${coachCode}\nPlayer code: ${playerCode}\n\nShare the right code with each person.`);
         await reloadClub();
         navigate("/");
       } else {
-        const { clubId: id, role } = await joinClub(clubCode.toUpperCase(), userId, email);
+        const { clubId: id, role } = await joinClub(clubCode.toUpperCase(), userId, email || user?.email || "");
         if (role === "coach") {
           await reloadClub();
           navigate("/");
