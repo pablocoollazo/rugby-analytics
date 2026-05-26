@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getClubPlaybook } from "../../utils/firestore";
+import { slotName } from "../../utils/positions";
 
 const RESULTS = ["try", "penalty", "turnover", "other"];
 
@@ -8,7 +9,7 @@ export default function PlaysSection({ stats, addEvent, deleteEvent, canEdit, pl
     const { club } = useAuth();
     const [playbook, setPlaybook] = useState([]);
     const [selectedPlay, setSelectedPlay] = useState(null);
-    const [playersByJersey, setPlayersByJersey] = useState({});
+    const [playersBySlot, setPlayersBySlot] = useState({});
     const [result, setResult] = useState("try");
 
     useEffect(() => {
@@ -17,41 +18,48 @@ export default function PlaysSection({ stats, addEvent, deleteEvent, canEdit, pl
 
     const plays = stats?.plays || [];
 
-    function playerForJersey(jersey) {
-        const entry = squad.find(s => String(s.jersey) === String(jersey));
-        return entry?.playerId || "";
+    // squad is effectiveSquad: [{ playerId, slot, position }]
+    // Auto-fill: for each slot in the play, find who covers that slot
+    function buildPrefilled(slots) {
+        const used = new Set();
+        const prefilled = {};
+        (slots || []).forEach(slot => {
+            const key = String(slot);
+            const entry = squad.find(s => String(s.slot) === key && !used.has(s.playerId));
+            prefilled[key] = entry?.playerId || "";
+            if (entry?.playerId) used.add(entry.playerId);
+        });
+        return prefilled;
     }
 
     function handlePlaySelect(playId) {
         const play = playbook.find(p => p.id === playId) || null;
         setSelectedPlay(play);
-        if (play?.jerseys) {
-            const prefilled = {};
-            play.jerseys.forEach(n => { prefilled[n] = playerForJersey(n); });
-            setPlayersByJersey(prefilled);
-        } else {
-            setPlayersByJersey({});
-        }
+        const slots = play?.slots || play?.jerseys; // backwards compat with old plays
+        setPlayersBySlot(slots ? buildPrefilled(slots) : {});
     }
 
     async function handleAdd(e) {
         e.preventDefault();
         if (!selectedPlay) return;
-        await addEvent({ type: "play", playbookId: selectedPlay.id, name: selectedPlay.name, playersByJersey, result });
+        await addEvent({ type: "play", playbookId: selectedPlay.id, name: selectedPlay.name, playersBySlot, result });
         setSelectedPlay(null);
-        setPlayersByJersey({});
+        setPlayersBySlot({});
         setResult("try");
     }
 
     function describePlay(play) {
-        if (!play.playersByJersey) return null;
-        return Object.entries(play.playersByJersey)
+        const bySlot = play.playersBySlot || play.playersByJersey;
+        if (!bySlot) return null;
+        return Object.entries(bySlot)
             .sort(([a], [b]) => Number(a) - Number(b))
-            .map(([jersey, pid]) => {
+            .map(([slot, pid]) => {
                 const p = players?.find(pl => pl.id === pid);
-                return `#${jersey}: ${p?.displayName || "—"}`;
+                return `${slotName(slot) || `#${slot}`}: ${p?.displayName || "—"}`;
             }).join(", ");
     }
+
+    const playSlots = selectedPlay?.slots || selectedPlay?.jerseys || [];
 
     return (
         <div>
@@ -94,30 +102,35 @@ export default function PlaysSection({ stats, addEvent, deleteEvent, canEdit, pl
                                 </select>
                             </div>
 
-                            {selectedPlay?.jerseys?.length > 0 && (
+                            {playSlots.length > 0 && (
                                 <div style={{ marginBottom: 10 }}>
                                     <label style={{ display: "block", marginBottom: 6 }}>Players</label>
-                                    {selectedPlay.jerseys.map(n => (
-                                        <div key={n} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                                            <span style={{ fontWeight: 700, width: 32, flexShrink: 0 }}>#{n}</span>
-                                            <select
-                                                value={playersByJersey[n] || ""}
-                                                onChange={e => setPlayersByJersey(prev => ({ ...prev, [n]: e.target.value }))}
-                                                style={{ flex: 1, fontSize: 13 }}
-                                            >
-                                                <option value="">— none —</option>
-                                                {players?.map(p => {
-                                                    const usedElsewhere = Object.entries(playersByJersey)
-                                                        .some(([slot, pid]) => String(slot) !== String(n) && pid === p.id);
-                                                    return (
-                                                        <option key={p.id} value={p.id} disabled={usedElsewhere}>
-                                                            {p.displayName}{usedElsewhere ? " (ya asignado)" : ""}
-                                                        </option>
-                                                    );
-                                                })}
-                                            </select>
-                                        </div>
-                                    ))}
+                                    {playSlots.map(slot => {
+                                        const key = String(slot);
+                                        return (
+                                            <div key={slot} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                                                <span style={{ fontWeight: 600, width: 160, flexShrink: 0, fontSize: 13 }}>
+                                                    {slotName(slot)}
+                                                </span>
+                                                <select
+                                                    value={playersBySlot[key] || ""}
+                                                    onChange={e => setPlayersBySlot(prev => ({ ...prev, [key]: e.target.value }))}
+                                                    style={{ flex: 1, fontSize: 13 }}
+                                                >
+                                                    <option value="">— none —</option>
+                                                    {players?.map(p => {
+                                                        const usedElsewhere = Object.entries(playersBySlot)
+                                                            .some(([s, pid]) => s !== key && pid === p.id);
+                                                        return (
+                                                            <option key={p.id} value={p.id} disabled={usedElsewhere}>
+                                                                {p.displayName}{usedElsewhere ? " (already assigned)" : ""}
+                                                            </option>
+                                                        );
+                                                    })}
+                                                </select>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
 

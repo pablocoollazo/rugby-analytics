@@ -1,29 +1,25 @@
 import { useState } from "react";
-
-const JERSEY_POSITION = {
-    1: "Prop Left", 2: "Hooker", 3: "Prop Right",
-    4: "Lock", 5: "Lock",
-    6: "Flanker", 7: "Flanker", 8: "Number 8",
-    9: "Scrum Half", 10: "Fly-half",
-    11: "Wing", 12: "Inside Center", 13: "Outside Center", 14: "Wing", 15: "Full-back",
-};
+import { slotName } from "../../utils/positions";
 
 export default function SubstitutionSection({ stats, addEvent, deleteEvent, canEdit, allPlayers, squad }) {
     const [recording, setRecording] = useState(false);
     const [minute, setMinute] = useState("");
-    // draft: { [jersey]: playerId } — only jerseys the coach actually changed
     const [draft, setDraft] = useState({});
 
     const subs = stats?.subs || [];
 
-    // Build current jersey→player map from squad prop (already has subs applied)
+    // Build current slot→playerId map from effectiveSquad
     const currentMap = {};
-    (squad || []).forEach(s => { if (s.jersey !== "" && s.jersey != null) currentMap[String(s.jersey)] = s.playerId; });
-    const sortedJerseys = Object.keys(currentMap).sort((a, b) => Number(a) - Number(b));
+    (squad || []).forEach(s => { if (s.slot != null) currentMap[String(s.slot)] = s.playerId; });
+    const sortedSlots = Object.keys(currentMap).sort((a, b) => Number(a) - Number(b));
 
     function playerName(id) {
         const p = allPlayers?.find(pl => pl.id === id);
         return p?.displayName || "—";
+    }
+
+    function slotLabel(slot) {
+        return slotName(slot) || `Slot ${slot}`;
     }
 
     function openRecording() {
@@ -32,29 +28,28 @@ export default function SubstitutionSection({ stats, addEvent, deleteEvent, canE
         setRecording(true);
     }
 
-    function setChange(jersey, playerId) {
+    function setChange(slot, playerId) {
         setDraft(prev => {
-            const next = { ...prev, [jersey]: playerId };
-            // If this player already occupies another position, vacate it (needs filling)
+            const next = { ...prev, [slot]: playerId };
             if (playerId) {
-                sortedJerseys.forEach(j => {
-                    if (j === jersey) return;
-                    const current = next[j] !== undefined ? next[j] : currentMap[j];
-                    if (current === playerId) next[j] = "";
+                sortedSlots.forEach(s => {
+                    if (s === slot) return;
+                    const current = next[s] !== undefined ? next[s] : currentMap[s];
+                    if (current === playerId) next[s] = "";
                 });
             }
             return next;
         });
     }
 
-    const hasPending = sortedJerseys.some(j => draft[j] === "");
+    const hasPending = sortedSlots.some(s => draft[s] === "");
 
     async function handleSave() {
         if (hasPending) return;
         const changes = {};
-        Object.entries(draft).forEach(([jersey, playerId]) => {
-            if (String(playerId) !== String(currentMap[jersey] || "")) {
-                changes[jersey] = playerId;
+        Object.entries(draft).forEach(([slot, playerId]) => {
+            if (String(playerId) !== String(currentMap[slot] || "")) {
+                changes[slot] = playerId;
             }
         });
         if (Object.keys(changes).length === 0) { setRecording(false); return; }
@@ -62,13 +57,6 @@ export default function SubstitutionSection({ stats, addEvent, deleteEvent, canE
         setRecording(false);
         setDraft({});
         setMinute("");
-    }
-
-    function describeChange(jersey, playerId) {
-        const pos = JERSEY_POSITION[Number(jersey)] || `#${jersey}`;
-        const prevName = playerName(currentMap[jersey]);
-        const newName = playerName(playerId);
-        return `${pos}: ${prevName} → ${newName}`;
     }
 
     return (
@@ -81,11 +69,11 @@ export default function SubstitutionSection({ stats, addEvent, deleteEvent, canE
                     <div>
                         {sub.minute != null && <small style={{ color: "#555" }}>Min. {sub.minute} — </small>}
                         <span style={{ fontSize: 13 }}>
-                            {Object.entries(sub.changes || {}).map(([j, pid], i) => (
-                                <span key={j}>
+                            {Object.entries(sub.changes || {}).map(([slot, pid], i) => (
+                                <span key={slot}>
                                     {i > 0 ? " · " : ""}
                                     <strong>{pid ? playerName(pid) : "—"}</strong>
-                                    <span style={{ fontSize: 12, color: "#777", marginLeft: 4 }}>{JERSEY_POSITION[Number(j)] || `#${j}`}</span>
+                                    <span style={{ fontSize: 12, color: "#777", marginLeft: 4 }}>{slotLabel(slot)}</span>
                                 </span>
                             ))}
                         </span>
@@ -117,23 +105,23 @@ export default function SubstitutionSection({ stats, addEvent, deleteEvent, canE
                             min="1" max="80" style={{ width: 60, fontSize: 13 }} />
                     </div>
 
-                    {sortedJerseys.length === 0 && (
+                    {sortedSlots.length === 0 && (
                         <p style={{ fontSize: 13, color: "#999" }}>Define the squad first.</p>
                     )}
 
-                    {sortedJerseys.map(jersey => {
-                        const currentPlayerId = currentMap[jersey];
-                        const draftPlayerId = draft[jersey] !== undefined ? draft[jersey] : currentPlayerId;
-                        const needsFilling = draft[jersey] === "";
-                        const changed = !needsFilling && draft[jersey] !== undefined && String(draft[jersey]) !== String(currentPlayerId);
+                    {sortedSlots.map(slot => {
+                        const currentPlayerId = currentMap[slot];
+                        const draftPlayerId = draft[slot] !== undefined ? draft[slot] : currentPlayerId;
+                        const needsFilling = draft[slot] === "";
+                        const changed = !needsFilling && draft[slot] !== undefined && String(draft[slot]) !== String(currentPlayerId);
                         return (
-                            <div key={jersey} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                                <span style={{ fontWeight: 700, width: 70, flexShrink: 0, fontSize: 13 }}>
-                                    #{jersey} <span style={{ fontWeight: 400, color: "#888" }}>{JERSEY_POSITION[Number(jersey)] || ""}</span>
+                            <div key={slot} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                                <span style={{ fontWeight: 600, width: 160, flexShrink: 0, fontSize: 13, color: "#374151" }}>
+                                    {slotLabel(slot)}
                                 </span>
                                 <select
                                     value={draftPlayerId || ""}
-                                    onChange={e => setChange(jersey, e.target.value)}
+                                    onChange={e => setChange(slot, e.target.value)}
                                     style={{ flex: 1, fontSize: 13, background: needsFilling ? "#fee2e2" : changed ? "#dcfce7" : "#fff" }}
                                 >
                                     {needsFilling && <option value="" disabled>— select a player —</option>}
@@ -148,16 +136,16 @@ export default function SubstitutionSection({ stats, addEvent, deleteEvent, canE
 
                     <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
                         <button type="button" onClick={handleSave} disabled={hasPending}>Save substitution</button>
-                        <button type="button" onClick={() => setRecording(false)}
-                            style={{ background: "none" }}>Cancel</button>
+                        <button type="button" onClick={() => setRecording(false)} style={{ background: "none" }}>Cancel</button>
                     </div>
 
-                    {Object.entries(draft).filter(([j, pid]) => String(pid) !== String(currentMap[j] || "")).length > 0 && (
+                    {Object.entries(draft).filter(([s, pid]) => String(pid) !== String(currentMap[s] || "")).length > 0 && (
                         <div style={{ marginTop: 10, fontSize: 12, color: "#555" }}>
                             {Object.entries(draft)
-                                .filter(([j, pid]) => String(pid) !== String(currentMap[j] || ""))
-                                .map(([j, pid]) => <div key={j}>{describeChange(j, pid)}</div>)
-                            }
+                                .filter(([s, pid]) => String(pid) !== String(currentMap[s] || ""))
+                                .map(([s, pid]) => (
+                                    <div key={s}>{slotLabel(s)}: {playerName(currentMap[s])} → {playerName(pid)}</div>
+                                ))}
                         </div>
                     )}
                 </div>

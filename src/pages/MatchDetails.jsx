@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { getClubPlayers, getStats, setStats, updateMatch } from "../utils/firestore";
+import { slotName } from "../utils/positions";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { getWeatherForMatch } from "../utils/weather";
@@ -119,29 +120,32 @@ export default function MatchDetails() {
 
     const rawSquad = docStats?.squad || [];
     const squad = rawSquad.length > 0 && typeof rawSquad[0] === "string"
-        ? rawSquad.map(id => ({ playerId: id, jersey: "", position: "", isStarter: true }))
+        ? rawSquad.map(id => ({ playerId: id, slot: null, isStarter: true }))
         : rawSquad;
 
     const effectiveSquad = useMemo(() => {
-        const jerseyMap = {};
-        squad.forEach(s => { const n = Number(s.jersey); if (n >= 1 && n <= 15) jerseyMap[String(n)] = s.playerId; });
+        // slotMap: slot (1-15) → playerId
+        const slotMap = {};
+        squad.forEach(s => { if (s.slot) slotMap[String(s.slot)] = s.playerId; });
         (eventStats.subs || []).forEach(sub => {
-            Object.entries(sub.changes || {}).forEach(([jersey, playerId]) => {
-                if (playerId) jerseyMap[jersey] = playerId;
-                else delete jerseyMap[jersey];
+            Object.entries(sub.changes || {}).forEach(([slot, playerId]) => {
+                if (playerId) slotMap[slot] = playerId;
+                else delete slotMap[slot];
             });
         });
-        return Object.entries(jerseyMap).map(([jersey, playerId]) => {
-            const original = squad.find(s => s.playerId === playerId) || {};
-            return { ...original, playerId, jersey };
-        });
+        return Object.entries(slotMap).map(([slot, playerId]) => ({
+            playerId,
+            slot:     Number(slot),
+            position: slotName(slot),
+        }));
     }, [squad, eventStats.subs]);
 
     const effectivePlayerIds = effectiveSquad.map(s => s.playerId);
     const eventPlayerIds = [...new Set(events.flatMap(e => {
         const ids = [];
         if (e.playerId) ids.push(e.playerId);
-        if (e.playersByJersey) ids.push(...Object.values(e.playersByJersey).filter(Boolean));
+        const bySlot = e.playersBySlot || e.playersByJersey;
+        if (bySlot) ids.push(...Object.values(bySlot).filter(Boolean));
         return ids;
     }))];
     const allMatchPlayerIds = [...new Set([...effectivePlayerIds, ...eventPlayerIds])];
@@ -153,7 +157,7 @@ export default function MatchDetails() {
     const TABS = [
         { key: "match",   label: "Match" },
         { key: "squad",   label: "Squad" },
-        { key: "players", label: "Players" },
+        ...(role !== "player" ? [{ key: "players", label: "Players" }] : []),
         { key: "plays",   label: "Plays" },
     ];
 

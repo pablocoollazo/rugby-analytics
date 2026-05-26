@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { getClubPlaybook, createPlay, deletePlay } from "../utils/firestore";
-
-const JERSEYS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+import { POSITION_SLOTS, slotName } from "../utils/positions";
 
 export default function Playbook() {
     const { club, role } = useAuth();
@@ -10,7 +9,7 @@ export default function Playbook() {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [name, setName] = useState("");
-    const [selectedJerseys, setSelectedJerseys] = useState([]);
+    const [selectedSlots, setSelectedSlots] = useState([]);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -22,20 +21,20 @@ export default function Playbook() {
         }
     }, [club]);
 
-    function toggleJersey(n) {
-        setSelectedJerseys(prev =>
-            prev.includes(n) ? prev.filter(x => x !== n) : [...prev, n].sort((a, b) => a - b)
+    function toggleSlot(slot) {
+        setSelectedSlots(prev =>
+            prev.includes(slot) ? prev.filter(x => x !== slot) : [...prev, slot].sort((a, b) => a - b)
         );
     }
 
     async function handleCreate(e) {
         e.preventDefault();
         setSaving(true);
-        await createPlay(club.clubId, { name, jerseys: selectedJerseys });
+        await createPlay(club.clubId, { name, slots: selectedSlots });
         const updated = await getClubPlaybook(club.clubId);
         setPlays(updated);
         setName("");
-        setSelectedJerseys([]);
+        setSelectedSlots([]);
         setShowForm(false);
         setSaving(false);
     }
@@ -65,24 +64,29 @@ export default function Playbook() {
                             style={{ display: "block", width: "100%", boxSizing: "border-box", marginTop: 4 }} />
                     </div>
                     <div style={{ marginTop: 12 }}>
-                        <label>Jerseys involved</label>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-                            {JERSEYS.map(n => {
-                                const selected = selectedJerseys.includes(n);
+                        <label>Positions involved</label>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
+                            {POSITION_SLOTS.map(({ slot, name: posName }) => {
+                                const selected = selectedSlots.includes(slot);
                                 return (
                                     <button
-                                        key={n}
+                                        key={slot}
                                         type="button"
-                                        onClick={() => toggleJersey(n)}
+                                        onClick={() => toggleSlot(slot)}
                                         style={{
-                                            width: 40, height: 40, borderRadius: 6, border: "2px solid",
-                                            borderColor: selected ? "#1d4ed8" : "#ccc",
+                                            padding: "8px 14px",
+                                            borderRadius: 6,
+                                            border: "2px solid",
+                                            borderColor: selected ? "#1d4ed8" : "#d1d5db",
                                             background: selected ? "#1d4ed8" : "#fff",
-                                            color: selected ? "#fff" : "#333",
-                                            fontWeight: 600, fontSize: 14, cursor: "pointer",
+                                            color: selected ? "#fff" : "#374151",
+                                            fontWeight: selected ? 600 : 400,
+                                            fontSize: 13,
+                                            cursor: "pointer",
+                                            textAlign: "left",
                                         }}
                                     >
-                                        {n}
+                                        {posName}
                                     </button>
                                 );
                             })}
@@ -111,8 +115,10 @@ export default function Playbook() {
                                     </button>
                                 )}
                             </div>
-                            {play.jerseys?.length > 0 && (
-                                <small style={{ color: "#555" }}>{play.jerseys.map(n => `#${n}`).join(" · ")}</small>
+                            {(play.slots || play.jerseys)?.length > 0 && (
+                                <small style={{ color: "#555" }}>
+                                    {(play.slots || play.jerseys).map(s => slotName(s)).filter(Boolean).join(" · ")}
+                                </small>
                             )}
                         </div>
                     ))}

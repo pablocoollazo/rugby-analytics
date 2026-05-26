@@ -1,157 +1,126 @@
-import { useState } from "react";
-
-const ALL_POSITIONS = [
-    "Prop", "Hooker", "Lock", "Flanker", "Number 8",
-    "Scrum-half", "Fly-half", "Inside Centre", "Outside Centre", "Wing", "Fullback"
-];
-
-const JERSEY_POSITION = {
-    1: "Prop", 2: "Hooker", 3: "Prop",
-    4: "Lock", 5: "Lock",
-    6: "Flanker", 7: "Flanker", 8: "Number 8",
-    9: "Scrum-half", 10: "Fly-half",
-    11: "Wing", 12: "Inside Centre", 13: "Outside Centre", 14: "Wing", 15: "Fullback",
-};
+import { useState, useEffect } from "react";
+import { POSITION_SLOTS, slotName } from "../../utils/positions";
 
 export default function SquadSection({ squad, allPlayers, canEdit, onSave }) {
-    // squad: [{ playerId, jersey, position, isStarter }]
-    const [entries, setEntries] = useState(() => {
-        const map = {};
-        squad.forEach(s => { map[s.playerId] = s; });
-        return map;
-    });
+    // squad: [{ playerId, slot (1-15 or null for bench), isStarter }]
+    const [slotMap, setSlotMap] = useState({});  // { [slot]: playerId }
+    const [bench, setBench] = useState([]);       // [playerId, ...]
     const [saving, setSaving] = useState(false);
 
-    function toggle(player) {
-        setEntries(prev => {
-            if (prev[player.id]) {
-                const next = { ...prev };
-                delete next[player.id];
-                return next;
-            }
-            return {
-                ...prev,
-                [player.id]: { playerId: player.id, jersey: "", position: player.mainPosition, isStarter: true },
-            };
+    useEffect(() => {
+        const sm = {};
+        const b = [];
+        (squad || []).forEach(s => {
+            if (s.slot) sm[String(s.slot)] = s.playerId;
+            else if (s.playerId) b.push(s.playerId);
         });
+        setSlotMap(sm);
+        setBench(b);
+    }, [squad]);
+
+    function playerName(id) {
+        return allPlayers.find(p => p.id === id)?.displayName || "—";
     }
 
-    function update(playerId, field, value) {
-        setEntries(prev => {
-            const updated = { ...prev[playerId], [field]: value };
-            if (field === "isStarter" && !value) {
-                const player = allPlayers.find(p => p.id === playerId);
-                if (player?.mainPosition) updated.position = player.mainPosition;
-            }
-            return { ...prev, [playerId]: updated };
-        });
-    }
-
-    // Called on blur so partial numbers like "4" don't auto-assign mid-type
-    function applyJerseyDefaults(playerId, jerseyValue) {
-        setEntries(prev => {
-            const entry = prev[playerId];
-            if (!entry) return prev;
-            const updated = { ...entry };
-            const n = Number(jerseyValue);
-            if (n >= 1 && n <= 15) {
-                const autoPos = JERSEY_POSITION[n];
-                if (autoPos) updated.position = autoPos;
-            } else if (n > 15) {
-                const player = allPlayers.find(p => p.id === playerId);
-                if (player?.mainPosition) updated.position = player.mainPosition;
-                updated.isStarter = false;
-            }
-            return { ...prev, [playerId]: updated };
-        });
-    }
+    const assignedIds = new Set([...Object.values(slotMap), ...bench].filter(Boolean));
 
     async function handleSave(e) {
         e.preventDefault();
         setSaving(true);
-        await onSave(Object.values(entries));
+        const newSquad = [];
+        POSITION_SLOTS.forEach(({ slot }) => {
+            if (slotMap[slot]) newSquad.push({ playerId: slotMap[slot], slot, isStarter: true });
+        });
+        bench.forEach(pid => { if (pid) newSquad.push({ playerId: pid, slot: null, isStarter: false }); });
+        await onSave(newSquad);
         setSaving(false);
     }
 
-    const starters = Object.values(entries).filter(e => e.isStarter).sort((a, b) => Number(a.jersey) - Number(b.jersey));
-    const subs = Object.values(entries).filter(e => !e.isStarter).sort((a, b) => Number(a.jersey) - Number(b.jersey));
+    const starterSlots = POSITION_SLOTS.filter(p => slotMap[p.slot]);
+    const benchPlayers = bench.filter(Boolean);
 
-    function playerName(id) {
-        const p = allPlayers.find(p => p.id === id);
-        return p ? p.displayName : id;
+    if (!canEdit) {
+        if (starterSlots.length === 0 && benchPlayers.length === 0)
+            return <p style={{ color: "#999" }}>No squad defined.</p>;
+        return (
+            <div style={{ fontSize: 13 }}>
+                {starterSlots.length > 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                        <strong style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "#374151" }}>Starters</strong>
+                        {POSITION_SLOTS.filter(p => slotMap[p.slot]).map(p => (
+                            <div key={p.slot} style={{ display: "flex", gap: 12, padding: "4px 0", borderBottom: "1px solid #f0f0f0" }}>
+                                <span style={{ color: "#6b7280", width: 160, flexShrink: 0 }}>{p.name}</span>
+                                <span style={{ fontWeight: 500 }}>{playerName(slotMap[p.slot])}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                {benchPlayers.length > 0 && (
+                    <div>
+                        <strong style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "#374151" }}>Bench</strong>
+                        <p style={{ marginTop: 4, color: "#555" }}>{benchPlayers.map(playerName).join(", ")}</p>
+                    </div>
+                )}
+            </div>
+        );
     }
 
     return (
-        <div>
-            {/* Summary */}
-            {(starters.length > 0 || subs.length > 0) && (
-                <div style={{ marginBottom: 16, fontSize: 13, color: "#555" }}>
-                    {starters.length > 0 && (
-                        <p><strong>Starters ({starters.length}):</strong> {starters.map(s => `${s.jersey ? `#${s.jersey} ` : ""}${playerName(s.playerId)}`).join(", ")}</p>
-                    )}
-                    {subs.length > 0 && (
-                        <p style={{ marginTop: 4 }}><strong>Subs ({subs.length}):</strong> {subs.map(s => `${s.jersey ? `#${s.jersey} ` : ""}${playerName(s.playerId)}`).join(", ")}</p>
-                    )}
+        <form onSubmit={handleSave}>
+            <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "#374151", marginBottom: 8 }}>
+                    Starters
                 </div>
-            )}
+                {POSITION_SLOTS.map(({ slot, name }) => {
+                    const assigned = slotMap[slot] || "";
+                    return (
+                        <div key={slot} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                            <span style={{ width: 160, flexShrink: 0, fontSize: 13, color: "#555" }}>{name}</span>
+                            <select
+                                value={assigned}
+                                onChange={e => setSlotMap(prev => {
+                                    const next = { ...prev };
+                                    if (e.target.value) next[slot] = e.target.value;
+                                    else delete next[slot];
+                                    return next;
+                                })}
+                                style={{ flex: 1, fontSize: 13 }}
+                            >
+                                <option value="">— empty —</option>
+                                {allPlayers
+                                    .filter(p => !assignedIds.has(p.id) || p.id === assigned)
+                                    .map(p => <option key={p.id} value={p.id}>{p.displayName}</option>)}
+                            </select>
+                        </div>
+                    );
+                })}
+            </div>
 
-            {canEdit && (
-                <form onSubmit={handleSave}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        {allPlayers.map(p => {
-                            const entry = entries[p.id];
-                            return (
-                                <div key={p.id} className="card"
-                                    style={{ background: entry ? "#e8f0fe" : "#efefef", padding: "8px 12px", borderRadius: 6 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                        <input type="checkbox" checked={!!entry} onChange={() => toggle(p)} />
-                                        <span style={{ flex: 1, fontWeight: entry ? 600 : 400 }}>{p.displayName}</span>
-                                        <span style={{ fontSize: 12, color: "#888" }}>{p.mainPosition}</span>
-                                    </div>
-                                    {entry && (
-                                        <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
-                                            <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                placeholder="Jersey #"
-                                                value={entry.jersey}
-                                                onChange={e => {
-                                                    const val = e.target.value.replace(/[^0-9]/g, "");
-                                                    update(p.id, "jersey", val);
-                                                }}
-                                                onBlur={() => applyJerseyDefaults(p.id, entry.jersey)}
-                                                style={{ width: 70, fontSize: 13 }}
-                                            />
-                                            <select
-                                                value={entry.position}
-                                                onChange={e => update(p.id, "position", e.target.value)}
-                                                style={{ fontSize: 13, flex: 1 }}
-                                            >
-                                                {ALL_POSITIONS.map(pos => <option key={pos} value={pos}>{pos}</option>)}
-                                            </select>
-                                            <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, cursor: "pointer" }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={entry.isStarter}
-                                                    onChange={e => update(p.id, "isStarter", e.target.checked)}
-                                                />
-                                                Starter
-                                            </label>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+            <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, color: "#374151", marginBottom: 8 }}>
+                    Bench
+                </div>
+                {bench.map((pid, i) => (
+                    <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "center" }}>
+                        <select
+                            value={pid || ""}
+                            onChange={e => setBench(prev => prev.map((p, j) => j === i ? e.target.value : p))}
+                            style={{ flex: 1, fontSize: 13 }}
+                        >
+                            <option value="">— select player —</option>
+                            {allPlayers
+                                .filter(p => !assignedIds.has(p.id) || p.id === pid)
+                                .map(p => <option key={p.id} value={p.id}>{p.displayName}</option>)}
+                        </select>
+                        <button type="button" onClick={() => setBench(prev => prev.filter((_, j) => j !== i))}
+                            style={{ fontSize: 13, background: "none", border: "none", color: "#dc2626", cursor: "pointer" }}>✕</button>
                     </div>
-                    <button type="submit" disabled={saving} style={{ marginTop: 12 }}>
-                        {saving ? "Saving..." : "Save squad"}
-                    </button>
-                </form>
-            )}
+                ))}
+                <button type="button" onClick={() => setBench(prev => [...prev, ""])}
+                    style={{ fontSize: 13, marginTop: 4 }}>+ Add bench player</button>
+            </div>
 
-            {!canEdit && starters.length === 0 && subs.length === 0 && (
-                <p style={{ color: "#999" }}>No squad defined.</p>
-            )}
-        </div>
+            <button type="submit" disabled={saving}>{saving ? "Saving..." : "Save squad"}</button>
+        </form>
     );
 }
