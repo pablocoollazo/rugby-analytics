@@ -52,7 +52,7 @@ function deriveStats(events) {
         break;
       }
       case "try":  tries.push({ id: ev.id, playerId: ev.playerId, fromPlay: ev.fromPlay, minute: ev.minute }); break;
-      case "play": plays.push({ id: ev.id, playbookId: ev.playbookId, name: ev.name, playersByJersey: ev.playersByJersey, result: ev.result }); break;
+      case "play": plays.push({ id: ev.id, playbookId: ev.playbookId, name: ev.name, playersBySlot: ev.playersBySlot || ev.playersByJersey, result: ev.result }); break;
       case "sub":  subs.push({ id: ev.id, minute: ev.minute, changes: ev.changes }); break;
       default: break;
     }

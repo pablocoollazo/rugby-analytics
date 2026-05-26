@@ -2,11 +2,6 @@ import { useState } from "react";
 
 const PENALTY_REASONS = ["scrum", "ruck", "offside", "knock-on", "illegal tackle", "other"];
 
-const JERSEY_POSITION = {
-    1: "Prop Left", 2: "Hooker", 3: "Prop Right", 4: "Lock", 5: "Lock",
-    6: "Flanker", 7: "Flanker", 8: "Number 8", 9: "Scrum Half", 10: "Fly-half",
-    11: "Wing", 12: "Inside Center", 13: "Outside Center", 14: "Wing", 15: "Full-back",
-};
 
 export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, players, squad = [] }) {
     const [selectedId, setSelectedId] = useState(null);
@@ -25,8 +20,7 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
     const selectedIsOnField = onFieldIds.has(selectedId);
 
     function addWithPosition(data) {
-        const entry = squad.find(s => s.playerId === data.playerId);
-        const position = JERSEY_POSITION[Number(entry?.jersey)] || entry?.position || null;
+        const position = squad.find(s => s.playerId === data.playerId)?.position || null;
         return addEvent(position ? { ...data, position } : data);
     }
 
@@ -130,10 +124,10 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                 <optgroup label="On the field">
                     {onField.map(p => {
                         const entry = squad.find(s => s.playerId === p.id);
-                        const pos = JERSEY_POSITION[Number(entry?.jersey)] || entry?.position || p.mainPosition;
+                        const pos = entry?.position || p.mainPosition;
                         return (
                             <option key={p.id} value={p.id}>
-                                {entry?.jersey ? `#${entry.jersey} ` : ""}{p.displayName} — {pos}
+                                {p.displayName}{pos ? ` — ${pos}` : ""}
                             </option>
                         );
                     })}
@@ -251,29 +245,6 @@ export default function PlayerEvents({ events, addEvent, deleteEvent, canEdit, p
                         </div>
                     </div>
 
-                    {/* Kick at goal — kickers only */}
-                    {selectedPlayer.isKicker && (
-                        <div style={{ marginBottom: selectedPlayer.isThrower ? 12 : 0 }}>
-                            <small style={{ color: "#1e40af", fontWeight: 700, letterSpacing: 0.5 }}>KICK AT GOAL</small>
-                            <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
-                                <select value={kickGoalType} onChange={e => setKickGoalType(e.target.value)} style={{ fontSize: 13, flex: 1 }}>
-                                    <option value="conversion">Conversion</option>
-                                    <option value="penalty">Penalty kick</option>
-                                    <option value="dropgoal">Drop goal</option>
-                                </select>
-                                <button type="button"
-                                    onClick={() => addWithPosition({ type: "kick_at_goal_made", playerId: selectedId, kickType: kickGoalType })}
-                                    style={{ padding: "9px 12px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-                                    Made
-                                </button>
-                                <button type="button"
-                                    onClick={() => addWithPosition({ type: "kick_at_goal_missed", playerId: selectedId, kickType: kickGoalType })}
-                                    style={{ padding: "9px 12px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-                                    Missed
-                                </button>
-                            </div>
-                        </div>
-                    )}
 
                     {/* Lineout error — throwers only */}
                     {selectedPlayer.isThrower && (

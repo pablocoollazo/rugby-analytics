@@ -53,6 +53,12 @@ export default function ScoreSection({ events, addEvent, deleteEvent, scoreUs, c
         return (players || []).filter(p => ids.has(p.id));
     }, [players, squad]);
 
+    const KICK_TYPES = ["conversion", "penalty", "dropgoal"];
+    const isKickPending = pendingUs && KICK_TYPES.includes(pendingUs.type);
+    const selectablePlayers = isKickPending
+        ? onFieldPlayers.filter(p => p.isKicker)
+        : onFieldPlayers;
+
     function startUsScore(opt) {
         setPendingUs(opt);
         setPendingPlayerId("");
@@ -136,7 +142,7 @@ export default function ScoreSection({ events, addEvent, deleteEvent, scoreUs, c
                             <select value={pendingPlayerId} onChange={e => setPendingPlayerId(e.target.value)}
                                 style={{ width: "100%", fontSize: 13, marginBottom: 10 }}>
                                 <option value="">— Unknown —</option>
-                                {onFieldPlayers.map(p => {
+                                {selectablePlayers.map(p => {
                                     const entry = squad?.find(s => s.playerId === p.id);
                                     return (
                                         <option key={p.id} value={p.id}>
@@ -152,10 +158,28 @@ export default function ScoreSection({ events, addEvent, deleteEvent, scoreUs, c
                                         min="1" max="80" style={{ width: 120, fontSize: 13 }} />
                                 </div>
                             )}
-                            <button type="button" onClick={confirmUsScore}
-                                style={{ width: "100%", padding: "9px 0", background: "#16a34a", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-                                Confirm
-                            </button>
+                            {isKickPending ? (
+                                <div style={{ display: "flex", gap: 8 }}>
+                                    <button type="button" onClick={confirmUsScore}
+                                        style={{ flex: 1, padding: "9px 0", background: "#16a34a", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                                        Made ✓
+                                    </button>
+                                    <button type="button" onClick={async () => {
+                                        const entry = squad?.find(s => s.playerId === pendingPlayerId);
+                                        const position = JERSEY_POSITION[Number(entry?.jersey)] || entry?.position || null;
+                                        await addEvent({ playerId: pendingPlayerId || null, ...(position ? { position } : {}), type: "kick_at_goal_missed", kickType: pendingUs.type });
+                                        setPendingUs(null);
+                                    }}
+                                        style={{ flex: 1, padding: "9px 0", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                                        Missed ✗
+                                    </button>
+                                </div>
+                            ) : (
+                                <button type="button" onClick={confirmUsScore}
+                                    style={{ width: "100%", padding: "9px 0", background: "#16a34a", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                                    Confirm
+                                </button>
+                            )}
                         </div>
                     )}
 
