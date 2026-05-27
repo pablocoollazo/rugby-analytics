@@ -89,16 +89,16 @@ export default function ClubMembers() {
       </div>
 
       {/* Home city */}
-      <div style={{ padding: "14px 18px", marginBottom: 20 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Home city (for weather)</div>
-        <div style={{ display: "flex", gap: 8 }}>
+      <div className="card" style={{ padding: "14px 18px", marginBottom: 20 }}>
+        <label>Home city (for weather)</label>
+        <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
           <input
             value={homeCity}
             onChange={e => setHomeCity(e.target.value)}
             placeholder="e.g. A Coruña"
-            style={{ flex: 1, fontSize: 13 }}
+            style={{ flex: 1 }}
           />
-          <button onClick={handleSaveCity} disabled={savingCity} style={{ fontSize: 13 }}>
+          <button onClick={handleSaveCity} disabled={savingCity}>
             {savingCity ? "Saving..." : "Save"}
           </button>
         </div>
@@ -119,8 +119,10 @@ export default function ClubMembers() {
                 <div key={m.uid} className="card" style={{ padding: 16, marginBottom: 12 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
                       <strong style={{ fontSize: 14 }}>{m.email}</strong>
-                      {isSelf && <span style={{ marginLeft: 8, color: "#888", fontSize: 12 }}>(you)</span>}
+                      {isSelf && <span style={{ color: "var(--muted)", fontSize: 12 }}>(you)</span>}
+                    </div>
                       {linked && !isRelinking && (
                         <div style={{ fontSize: 13, color: "#555", marginTop: 2 }}>
                           Player: {linked.name} {linked.surname} — {linked.mainPosition}
@@ -167,13 +169,14 @@ export default function ClubMembers() {
                         value={m.role}
                         onChange={e => handleRoleChange(m.uid, e.target.value)}
                         disabled={isSelf}
+                        style={{ fontSize: 12 }}
                       >
                         {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                       </select>
                       {!isSelf && (
                         <button
                           onClick={() => handleRemoveMember(m.uid, m.email)}
-                          style={{ fontSize: 12, color: "#dc2626", background: "none", border: "1px solid #fca5a5", borderRadius: 5, padding: "5px 10px", cursor: "pointer" }}
+                          style={{ fontSize: 12, color: "var(--red)", background: "none", border: "1px solid #fca5a5", borderRadius: "var(--r-sm)", padding: "5px 10px", cursor: "pointer" }}
                         >
                           Remove
                         </button>

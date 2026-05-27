@@ -88,21 +88,25 @@ export default function PlayerProfile() {
         <div className="page">
             <h1>{player.displayName}</h1>
 
-            <div className="card" style={{ padding: "14px 18px", marginBottom: 16 }}>
-                <div style={{ display: "flex", gap: 24, flexWrap: "wrap", fontSize: 13 }}>
-                    <span><strong>Position:</strong> {player.mainPosition}</span>
-                    {player.altPositions?.length > 0 && (
-                        <span><strong>Also plays:</strong> {player.altPositions.join(", ")}</span>
-                    )}
-                    {player.dateOfBirth && (
-                        <span><strong>DOB:</strong> {new Date(player.dateOfBirth).toLocaleDateString("en-GB")}</span>
-                    )}
-                    <span><strong>Matches:</strong> {playerMatches.length}</span>
+            <div className="card" style={{ padding: "16px 18px", marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 11, background: "var(--blue-50)", color: "var(--blue)", fontWeight: 600, padding: "2px 9px", borderRadius: 12 }}>
+                            {player.mainPosition}
+                        </span>
+                        {player.altPositions?.map(pos => (
+                            <span key={pos} style={{ fontSize: 11, background: "var(--bg)", color: "var(--muted)", fontWeight: 500, padding: "2px 9px", borderRadius: 12, border: "1px solid var(--border)" }}>
+                                {pos}
+                            </span>
+                        ))}
+                        {player.isThrower && <span style={{ fontSize: 11, background: "#dbeafe", color: "#1d4ed8", fontWeight: 600, padding: "2px 9px", borderRadius: 12 }}>Thrower</span>}
+                        {player.isKicker  && <span style={{ fontSize: 11, background: "#dcfce7", color: "#15803d", fontWeight: 600, padding: "2px 9px", borderRadius: 12 }}>Kicker</span>}
+                    </div>
+                    <span style={{ fontSize: 12, color: "var(--muted)" }}>{playerMatches.length} match{playerMatches.length !== 1 ? "es" : ""}</span>
                 </div>
-                {(player.isThrower || player.isKicker) && (
-                    <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
-                        {player.isThrower && <Tag label="Thrower" color="#dbeafe" />}
-                        {player.isKicker  && <Tag label="Kicker"  color="#dcfce7" />}
+                {player.dateOfBirth && (
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
+                        DOB: {new Date(player.dateOfBirth).toLocaleDateString("en-GB")}
                     </div>
                 )}
             </div>
@@ -219,8 +223,3 @@ function StatCard({ label, value, color }) {
     );
 }
 
-function Tag({ label, color }) {
-    return (
-        <small style={{ background: color, padding: "2px 8px", borderRadius: 10, fontSize: 12 }}>{label}</small>
-    );
-}
