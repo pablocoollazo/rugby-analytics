@@ -96,6 +96,7 @@ export default function Register() {
   if (step === 3) {
     return (
       <div style={wrapper}>
+        <h1 style={{ margin: "0 0 24px", textAlign: "center" }}>Rugby Analytics</h1>
         <div className="card" style={card}>
           <h2 style={{ marginBottom: 6 }}>Select your profile</h2>
           <p style={{ marginBottom: 20 }}>Find your name in the squad and link your account to it.</p>
@@ -126,16 +127,22 @@ export default function Register() {
   if (step === 2) {
     return (
       <div style={wrapper}>
+        <h1 style={{ margin: "0 0 24px", textAlign: "center" }}>Rugby Analytics</h1>
         <div className="card" style={card}>
           <h2 style={{ marginBottom: 20 }}>Join or create a club</h2>
           {error && <p style={{ color: "var(--red)", marginBottom: 14, fontSize: 13 }}>{error}</p>}
           <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-            <button onClick={() => setClubOption("create")} style={{ flex: 1, background: clubOption === "create" ? "var(--blue)" : undefined, color: clubOption === "create" ? "#fff" : undefined, border: clubOption === "create" ? "none" : undefined }}>
-              Create club
-            </button>
-            <button onClick={() => setClubOption("join")} style={{ flex: 1, background: clubOption === "join" ? "var(--blue)" : undefined, color: clubOption === "join" ? "#fff" : undefined, border: clubOption === "join" ? "none" : undefined }}>
-              Join club
-            </button>
+            {["create", "join"].map(opt => (
+              <button key={opt} onClick={() => setClubOption(opt)} style={{
+                flex: 1,
+                background: clubOption === opt ? "var(--blue)" : "var(--surface)",
+                color:      clubOption === opt ? "#fff" : "var(--text)",
+                border:     clubOption === opt ? "none" : "1px solid var(--border)",
+                fontWeight: clubOption === opt ? 600 : 400,
+              }}>
+                {opt === "create" ? "Create club" : "Join club"}
+              </button>
+            ))}
           </div>
 
           {clubOption === "create" && (

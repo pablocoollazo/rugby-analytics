@@ -56,11 +56,14 @@ export default function Home() {
         />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
-        <QuickLink to="/matches"  icon="📅" title="Matches"  desc="Manage and record matches" />
-        <QuickLink to="/players"  icon="👥" title="Players"  desc="Club squad" />
-        <QuickLink to="/analysis" icon="📊" title="Analysis" desc="Season statistics" />
-        <QuickLink to="/playbook" icon="📋" title="Playbook" desc="Club plays library" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 }}>
+        <QuickLink to="/matches"  title="Matches"  desc="Manage and record matches" />
+        {role !== "player" && <QuickLink to="/players"  title="Players"  desc="Club squad" />}
+        <QuickLink to="/analysis" title="Analysis" desc="Season statistics" />
+        {role !== "player" && <QuickLink to="/playbook" title="Playbook" desc="Club plays library" />}
+        {role === "player" && linkedPlayer && (
+          <QuickLink to={`/players/${linkedPlayer.id}`} title="My profile" desc="Your stats and career" />
+        )}
       </div>
     </div>
   );
@@ -76,17 +79,14 @@ function StatBox({ label, value, sub, color }) {
   );
 }
 
-function QuickLink({ to, icon, title, desc }) {
+function QuickLink({ to, title, desc }) {
   return (
     <Link to={to} style={{ textDecoration: "none" }}>
-      <div className="card" style={{ padding: "18px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", transition: "box-shadow .15s" }}
+      <div className="card" style={{ padding: "18px 20px", cursor: "pointer", transition: "box-shadow .15s" }}
         onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,.1)"}
         onMouseLeave={e => e.currentTarget.style.boxShadow = ""}>
-        <span style={{ fontSize: 28 }}>{icon}</span>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>{title}</div>
-          <div style={{ fontSize: 12, color: "var(--muted)" }}>{desc}</div>
-        </div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>{title}</div>
+        <div style={{ fontSize: 12, color: "var(--muted)" }}>{desc}</div>
       </div>
     </Link>
   );
