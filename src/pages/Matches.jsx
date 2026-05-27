@@ -69,33 +69,35 @@ export default function Matches() {
       )}
 
       {showForm && (
-        <form onSubmit={handleCreate} className="card" style={{ marginBottom: 20, padding: 20 }}>
+        <form onSubmit={handleCreate} className="card" style={{ marginBottom: 20, padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
             <label>Rival</label>
-            <input value={rival} onChange={(e) => setRival(e.target.value)} required />
+            <input value={rival} onChange={(e) => setRival(e.target.value)} required style={{ width: "100%", boxSizing: "border-box" }} />
           </div>
-          <div style={{ marginTop: 12}}>
-            <label>Date</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <label>Date</label>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required style={{ width: "100%", boxSizing: "border-box" }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label>Location</label>
+              <select value={location} onChange={e => {
+                const loc = e.target.value;
+                setLocation(loc);
+                if (loc === "Home" && club?.city) setCity(club.city);
+                else if (loc !== "Home") setCity("");
+              }} style={{ width: "100%" }}>
+                <option value="Home">Home</option>
+                <option value="Away">Away</option>
+                <option value="Neutral">Neutral</option>
+              </select>
+            </div>
           </div>
-          <div style={{ marginTop: 12}}>
-            <label>Location</label>
-            <select value={location} onChange={e => {
-              const loc = e.target.value;
-              setLocation(loc);
-              if (loc === "Home" && club?.city) setCity(club.city);
-              else if (loc !== "Home") setCity("");
-            }}>
-              <option value="Home">Home</option>
-              <option value="Away">Away</option>
-              <option value="Neutral">Neutral</option>
-            </select>
-          </div>
-          <div style={{ marginTop: 12 }}>
+          <div>
             <label>City (for weather)</label>
-            <input value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. A Coruña" />
+            <input value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. A Coruña" style={{ width: "100%", boxSizing: "border-box" }} />
           </div>
-          <button type="submit" disabled={saving} style={{ marginTop: 12 }}>
+          <button type="submit" disabled={saving} style={{ alignSelf: "flex-start" }}>
             {saving ? "Saving..." : "Save Match"}
           </button>
         </form>
@@ -106,31 +108,50 @@ export default function Matches() {
       ) : matches.length === 0 ? (
         <p>No matches yet. Add your first match!</p>
       ) : (
-        <div>
-          {matches.map(m => (
-            <div key={m.id} className="card"
-              style={{ padding: 16, marginBottom: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <strong style={{ cursor: "pointer" }} onClick={() => navigate(`/matches/${m.id}`)}>
-                  vs {m.rival}
-                </strong>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span>{m.date}</span>
-                  {canEdit && (
-                    <button onClick={() => handleDelete(m.id)}
-                      style={{ color: "red", background: "none", border: "none", cursor: "pointer", fontSize: 13 }}>
-                      Delete
-                    </button>
-                  )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {matches.map(m => {
+            const resultColor = { Win: "#16a34a", Loss: "#dc2626", Draw: "#6b7280" }[m.result];
+            const score = (m.pointsFor != null && m.pointsAgainst != null)
+              ? `${m.pointsFor} – ${m.pointsAgainst}` : null;
+            return (
+              <div key={m.id} className="card"
+                style={{ padding: "14px 16px", cursor: "pointer" }}
+                onClick={() => navigate(`/matches/${m.id}`)}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <strong style={{ fontSize: 14 }}>vs {m.rival}</strong>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                      {m.date}{m.location ? ` · ${m.location}` : ""}{m.city ? ` · ${m.city}` : ""}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    {score && (
+                      <span style={{ fontSize: 16, fontWeight: 700, color: resultColor || "var(--text)" }}>
+                        {score}
+                      </span>
+                    )}
+                    {m.result ? (
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, padding: "2px 9px", borderRadius: 20,
+                        background: resultColor, color: "#fff",
+                      }}>{m.result}</span>
+                    ) : (
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, padding: "2px 9px", borderRadius: 20,
+                        background: "#f1f5f9", color: "var(--muted)", border: "1px solid var(--border)",
+                      }}>Upcoming</span>
+                    )}
+                    {canEdit && (
+                      <button onClick={e => { e.stopPropagation(); handleDelete(m.id); }}
+                        style={{ color: "var(--red)", background: "none", border: "none", cursor: "pointer", fontSize: 13, padding: "4px 6px" }}>
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, cursor: "pointer" }}
-                onClick={() => navigate(`/matches/${m.id}`)}>
-                <small>{m.location}{m.city ? ` · ${m.city}` : ""}</small>
-                <small>{m.result || "Pending"}</small>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

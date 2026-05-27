@@ -103,22 +103,26 @@ export default function Playbook() {
             ) : plays.length === 0 ? (
                 <p>No plays yet. Add your first play!</p>
             ) : (
-                <div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {plays.map(play => (
-                        <div key={play.id} className="card" style={{ padding: 16, marginBottom: 12 }}>
+                        <div key={play.id} className="card" style={{ padding: "14px 16px" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <strong>{play.name}</strong>
+                                <strong style={{ fontSize: 14 }}>{play.name}</strong>
                                 {canEdit && (
                                     <button onClick={() => handleDelete(play.id)}
-                                        style={{ color: "red", background: "none", border: "none", cursor: "pointer" }}>
+                                        style={{ color: "var(--red)", background: "none", border: "none", cursor: "pointer", fontSize: 12 }}>
                                         Delete
                                     </button>
                                 )}
                             </div>
                             {(play.slots || play.jerseys)?.length > 0 && (
-                                <small style={{ color: "#555" }}>
-                                    {(play.slots || play.jerseys).map(s => slotName(s)).filter(Boolean).join(" · ")}
-                                </small>
+                                <div style={{ marginTop: 4, display: "flex", flexWrap: "wrap", gap: 4 }}>
+                                    {(play.slots || play.jerseys).map(s => slotName(s)).filter(Boolean).map(name => (
+                                        <span key={name} style={{ fontSize: 11, background: "var(--blue-50)", color: "var(--blue)", padding: "1px 7px", borderRadius: 10, fontWeight: 500 }}>
+                                            {name}
+                                        </span>
+                                    ))}
+                                </div>
                             )}
                         </div>
                     ))}

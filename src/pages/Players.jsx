@@ -136,19 +136,20 @@ export default function Players() {
 
       {showForm && (
         <form onSubmit={handleCreate} className="card" style={{ padding: 20, marginBottom: 20 }}>
-          <div>
-            <label>Name</label>
-            <input value={name} onChange={e => setName(e.target.value)} required />
-          </div>
-
-          <div style={{ marginTop: 12 }}>
-            <label>Surname</label>
-            <input value={surname} onChange={e => setSurname(e.target.value)} required />
+          <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ flex: 1 }}>
+              <label>Name</label>
+              <input value={name} onChange={e => setName(e.target.value)} required style={{ width: "100%", boxSizing: "border-box" }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label>Surname</label>
+              <input value={surname} onChange={e => setSurname(e.target.value)} required style={{ width: "100%", boxSizing: "border-box" }} />
+            </div>
           </div>
 
           <div style={{ marginTop: 12 }}>
             <label>Nickname (optional)</label>
-            <input value={nickname} onChange={e => setNickname(e.target.value)} />
+            <input value={nickname} onChange={e => setNickname(e.target.value)} style={{ width: "100%", boxSizing: "border-box" }} />
           </div>
 
           <div style={{ marginTop: 12 }}>
@@ -159,6 +160,7 @@ export default function Players() {
                 setMainPosition(e.target.value);
                 setAltPositions(prev => prev.filter(p => p !== e.target.value));
               }}
+              style={{ width: "100%" }}
             >
               {ALL_POSITIONS.map(p => (
                 <option key={p} value={p}>{p}</option>
@@ -221,92 +223,97 @@ export default function Players() {
       ) : players.length === 0 ? (
         <p>No players yet. Add your first player!</p>
       ) : (
-        <div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
           {players.map(p => (
-            <div key={p.id} className="card" style={{ padding: 16, marginBottom: 12 }}>
+            <div key={p.id} className="card" style={{ padding: 16 }}>
               {editingId === p.id ? (
                 <div>
                   <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                     <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
-                      placeholder="Name" style={{ flex: 1, fontSize: 13 }} />
+                      placeholder="Name" style={{ flex: 1 }} />
                     <input value={editForm.surname} onChange={e => setEditForm(f => ({ ...f, surname: e.target.value }))}
-                      placeholder="Surname" style={{ flex: 1, fontSize: 13 }} />
+                      placeholder="Surname" style={{ flex: 1 }} />
                   </div>
                   <input value={editForm.nickname} onChange={e => setEditForm(f => ({ ...f, nickname: e.target.value }))}
-                    placeholder="Nickname (opcional)" style={{ width: "100%", fontSize: 13, marginBottom: 8, boxSizing: "border-box" }} />
+                    placeholder="Nickname (optional)" style={{ width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
                   <select value={editForm.mainPosition}
                     onChange={e => setEditForm(f => ({ ...f, mainPosition: e.target.value, altPositions: f.altPositions.filter(p => p !== e.target.value) }))}
-                    style={{ fontSize: 13, marginBottom: 8, width: "100%" }}>
+                    style={{ marginBottom: 8, width: "100%" }}>
                     {ALL_POSITIONS.map(pos => <option key={pos} value={pos}>{pos}</option>)}
                   </select>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
                     {ALL_POSITIONS.map(pos => {
                       const isMain = pos === editForm.mainPosition;
                       const isSelected = editForm.altPositions.includes(pos);
                       return (
                         <button key={pos} type="button" onClick={() => toggleEditAltPosition(pos)} disabled={isMain}
-                          style={{ padding: "3px 8px", borderRadius: 12, fontSize: 12, border: "1px solid #ccc",
-                            background: isMain ? "#ccc" : isSelected ? "#2563eb" : "#fff",
-                            color: isSelected && !isMain ? "#fff" : "#000", cursor: isMain ? "not-allowed" : "pointer" }}>
+                          style={{ padding: "3px 8px", borderRadius: 12, fontSize: 11, border: "1px solid var(--border)",
+                            background: isMain ? "var(--border)" : isSelected ? "var(--blue)" : "var(--surface)",
+                            color: isSelected && !isMain ? "#fff" : "var(--text)", cursor: isMain ? "not-allowed" : "pointer" }}>
                           {pos}
                         </button>
                       );
                     })}
                   </div>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center", flexWrap: "wrap" }}>
                     <input type="date" value={editForm.dateOfBirth}
                       onChange={e => setEditForm(f => ({ ...f, dateOfBirth: e.target.value }))}
-                      style={{ fontSize: 13, flex: 1 }} />
-                    <label style={{ fontSize: 13, display: "flex", gap: 4, alignItems: "center" }}>
+                      style={{ flex: 1, minWidth: 130 }} />
+                    <label style={{ display: "flex", gap: 4, alignItems: "center", fontWeight: 400, fontSize: 13 }}>
                       <input type="checkbox" checked={editForm.isThrower}
                         onChange={e => setEditForm(f => ({ ...f, isThrower: e.target.checked }))} /> Thrower
                     </label>
-                    <label style={{ fontSize: 13, display: "flex", gap: 4, alignItems: "center" }}>
+                    <label style={{ display: "flex", gap: 4, alignItems: "center", fontWeight: 400, fontSize: 13 }}>
                       <input type="checkbox" checked={editForm.isKicker}
                         onChange={e => setEditForm(f => ({ ...f, isKicker: e.target.checked }))} /> Kicker
                     </label>
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => handleSaveEdit(p.id)} disabled={saving} style={{ fontSize: 13 }}>
+                    <button onClick={() => handleSaveEdit(p.id)} disabled={saving}
+                      style={{ background: "var(--blue)", color: "#fff", border: "none" }}>
                       {saving ? "Saving..." : "Save"}
                     </button>
-                    <button onClick={() => setEditingId(null)} style={{ fontSize: 13, background: "none" }}>
-                      Cancel
-                    </button>
+                    <button onClick={() => setEditingId(null)}>Cancel</button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <strong>{p.displayName}</strong>
-                    <span>{p.mainPosition}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                    <strong style={{ fontSize: 14 }}>{p.displayName}</strong>
+                    <span style={{ fontSize: 11, background: "var(--blue-50)", color: "var(--blue)", fontWeight: 600,
+                      padding: "2px 8px", borderRadius: 12, whiteSpace: "nowrap", marginLeft: 8 }}>
+                      {p.mainPosition}
+                    </span>
                   </div>
                   {p.altPositions?.length > 0 && (
-                    <small>Also plays: {p.altPositions.join(", ")}</small>
-                  )}
-                  <br />
-                  <small>DOB: {p.dateOfBirth ? new Date(p.dateOfBirth).toLocaleDateString("en-GB") : p.age ?? "—"}</small>
-                  {(p.isThrower || p.isKicker) && (
-                    <div style={{ marginTop: 4, display: "flex", gap: 6 }}>
-                      {p.isThrower && <small style={{ background: "#dbeafe", padding: "1px 6px", borderRadius: 10 }}>Thrower</small>}
-                      {p.isKicker && <small style={{ background: "#dcfce7", padding: "1px 6px", borderRadius: 10 }}>Kicker</small>}
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>
+                      Also: {p.altPositions.join(", ")}
                     </div>
                   )}
-                  <div style={{ display: "flex", gap: 12, marginTop: 8, alignItems: "center" }}>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>
+                    {p.dateOfBirth ? new Date(p.dateOfBirth).toLocaleDateString("en-GB") : "—"}
+                  </div>
+                  {(p.isThrower || p.isKicker) && (
+                    <div style={{ display: "flex", gap: 5, marginBottom: 8 }}>
+                      {p.isThrower && <span style={{ fontSize: 11, background: "#dbeafe", color: "#1d4ed8", padding: "1px 7px", borderRadius: 10, fontWeight: 600 }}>Thrower</span>}
+                      {p.isKicker && <span style={{ fontSize: 11, background: "#dcfce7", color: "#15803d", padding: "1px 7px", borderRadius: 10, fontWeight: 600 }}>Kicker</span>}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", borderTop: "1px solid var(--border)", paddingTop: 10, marginTop: 2 }}>
                     {(role !== "player" || p.userId === user?.uid) && (
                       <button onClick={() => navigate(`/players/${p.id}`)}
-                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#2563eb" }}>
+                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--blue)", padding: 0 }}>
                         View profile
                       </button>
                     )}
                     {canEdit && (
                       <>
                         <button onClick={() => startEdit(p)}
-                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#555" }}>
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--muted)", padding: 0 }}>
                           Edit
                         </button>
                         <button onClick={() => handleDelete(p.id)}
-                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "red" }}>
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--red)", padding: 0, marginLeft: "auto" }}>
                           Delete
                         </button>
                       </>
