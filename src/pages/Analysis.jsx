@@ -152,28 +152,28 @@ export default function Analysis() {
         Object.values(eventsMap).flat().forEach(ev => {
             if (ev.type !== "play") return;
             const key = ev.playbookId || ev.name;
-            if (!agg[key]) agg[key] = { name: ev.name, total: 0, try: 0, penalty: 0, turnover: 0, other: 0, tryPlayers: {} };
+            if (!agg[key]) agg[key] = { name: ev.name, total: 0, try: 0, penalty: 0, turnover: 0, other: 0, players: {}, tryPlayers: {} };
             const s = agg[key];
             s.total++;
             if (ev.result) s[ev.result] = (s[ev.result] || 0) + 1;
-            if (ev.result === "try") {
-                const bySlot = ev.playersBySlot || ev.playersByJersey || {};
-                Object.values(bySlot).forEach(pid => {
-                    if (pid) s.tryPlayers[pid] = (s.tryPlayers[pid] || 0) + 1;
-                });
-            }
+            const bySlot = ev.playersBySlot || ev.playersByJersey || {};
+            Object.values(bySlot).forEach(pid => {
+                if (!pid) return;
+                s.players[pid] = (s.players[pid] || 0) + 1;
+                if (ev.result === "try") s.tryPlayers[pid] = (s.tryPlayers[pid] || 0) + 1;
+            });
         });
         return Object.values(agg).sort((a, b) => b.total - a.total);
     }, [eventsMap]);
 
-    // --- Player's personal play involvement ---
+    // --- Player's personal play involvement (all appearances) ---
     const myPlayAnalysis = useMemo(() => {
         if (!myPlayer) return [];
         return playAnalysis
-            .filter(play => (play.tryPlayers[myPlayer.id] || 0) > 0)
+            .filter(play => (play.players[myPlayer.id] || 0) > 0)
             .map(play => ({
                 name:     play.name,
-                appeared: play.tryPlayers[myPlayer.id],
+                appeared: play.players[myPlayer.id],
                 total:    play.total,
                 try:      play.try      || 0,
                 penalty:  play.penalty  || 0,
@@ -495,7 +495,7 @@ export default function Analysis() {
                                     <th style={TH}>Try %</th>
                                     <th style={TH}>Penalty %</th>
                                     <th style={TH}>Turnover %</th>
-                                    <th style={TH}>Try scorers</th>
+                                    <th style={TH}>In try results</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -573,43 +573,40 @@ export default function Analysis() {
                                 <tr style={{ background: "#e5e7eb", textAlign: "left" }}>
                                     <th style={TH}>Opponent</th>
                                     <th style={TH}>P</th>
-                                    <th style={TH}>W</th>
-                                    <th style={TH}>L</th>
-                                    <th style={TH}>D</th>
+                                    <th style={TH}>W–L–D</th>
                                     <th style={TH}>Score avg</th>
-                                    <th style={TH}>Tries</th>
+                                    <th style={TH}>Tries/match</th>
                                     <th style={TH}>Scrum W%</th>
-                                    <th style={TH}>Scrum stolen</th>
                                     <th style={TH}>Line-out W%</th>
-                                    <th style={TH}>Line-out stolen</th>
-                                    <th style={TH}>Rucks lost</th>
-                                    <th style={TH}>Tackles W/L/M</th>
-                                    <th style={TH}>Plays (try%)</th>
+                                    <th style={TH}>Tackle %</th>
+                                    <th style={TH}>Set plays try%</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {byRival.map(r => (
-                                    <tr key={r.rival} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                                        <td style={TD}><strong>{r.rival}</strong></td>
-                                        <td style={TD}>{r.matches}</td>
-                                        <td style={{ ...TD, color: r.wins > 0 ? "#16a34a" : undefined, fontWeight: r.wins > 0 ? 600 : 400 }}>{r.wins}</td>
-                                        <td style={{ ...TD, color: r.losses > 0 ? "#dc2626" : undefined }}>{r.losses}</td>
-                                        <td style={TD}>{r.draws || "—"}</td>
-                                        <td style={{ ...TD, color: "var(--muted)" }}>
-                                            {(r.pf / r.matches).toFixed(1)} – {(r.pa / r.matches).toFixed(1)}
-                                        </td>
-                                        <td style={TD}>{r.tries || "—"}</td>
-                                        <td style={TD}>{r.scrumOurs > 0 ? `${Math.round(r.scrumWon / r.scrumOurs * 100)}%` : "—"}</td>
-                                        <td style={TD}>{r.scrumStolen || "—"}</td>
-                                        <td style={TD}>{r.lineoutOurs > 0 ? `${Math.round(r.lineoutWon / r.lineoutOurs * 100)}%` : "—"}</td>
-                                        <td style={TD}>{r.lineoutStolen || "—"}</td>
-                                        <td style={TD}>{r.ruckLost || "—"}</td>
-                                        <td style={TD}>{r.tackleWon + r.tackleLost + r.tackleMissed > 0
-                                            ? `${r.tackleWon}/${r.tackleLost}/${r.tackleMissed}` : "—"}</td>
-                                        <td style={TD}>{r.playsTotal > 0
-                                            ? `${r.playsTotal} (${Math.round(r.playsTry / r.playsTotal * 100)}%)` : "—"}</td>
-                                    </tr>
-                                ))}
+                                {byRival.map(r => {
+                                    const totalTackles = r.tackleWon + r.tackleLost + r.tackleMissed;
+                                    const tackleSucc = totalTackles > 0
+                                        ? Math.round(r.tackleWon / totalTackles * 100) : null;
+                                    const resultColor = r.wins > r.losses ? "#16a34a" : r.losses > r.wins ? "#dc2626" : "#6b7280";
+                                    return (
+                                        <tr key={r.rival} style={{ borderBottom: "1px solid #e5e7eb" }}>
+                                            <td style={TD}><strong>{r.rival}</strong></td>
+                                            <td style={TD}>{r.matches}</td>
+                                            <td style={{ ...TD, color: resultColor, fontWeight: 600 }}>
+                                                {r.wins}–{r.losses}–{r.draws}
+                                            </td>
+                                            <td style={{ ...TD, color: "var(--muted)" }}>
+                                                {(r.pf / r.matches).toFixed(1)} – {(r.pa / r.matches).toFixed(1)}
+                                            </td>
+                                            <td style={TD}>{(r.tries / r.matches).toFixed(1)}</td>
+                                            <td style={TD}>{r.scrumOurs > 0 ? `${Math.round(r.scrumWon / r.scrumOurs * 100)}%` : "—"}</td>
+                                            <td style={TD}>{r.lineoutOurs > 0 ? `${Math.round(r.lineoutWon / r.lineoutOurs * 100)}%` : "—"}</td>
+                                            <td style={TD}>{tackleSucc !== null ? `${tackleSucc}%` : "—"}</td>
+                                            <td style={TD}>{r.playsTotal > 0
+                                                ? `${Math.round(r.playsTry / r.playsTotal * 100)}%` : "—"}</td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
