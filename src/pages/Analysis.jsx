@@ -186,12 +186,12 @@ export default function Analysis() {
         completed.forEach(m => {
             const cond = m.weather?.condition || "No data";
             if (!by[cond]) by[cond] = {
-                condition: cond, partidos: 0, victorias: 0, pf: 0, pa: 0,
+                condition: cond, matches: 0, wins: 0, pf: 0, pa: 0,
                 scrumWon: 0, scrumTotal: 0, lineoutWon: 0, lineoutTotal: 0,
             };
             const s = by[cond];
-            s.partidos++;
-            if (m.result === "Win") s.victorias++;
+            s.matches++;
+            if (m.result === "Win") s.wins++;
             s.pf += m.pointsFor || 0;
             s.pa += m.pointsAgainst || 0;
             (eventsMap[m.id] || []).forEach(ev => {
@@ -203,8 +203,8 @@ export default function Analysis() {
         });
         return Object.values(by).map(s => ({
             ...s,
-            winPct:     Math.round(s.victorias / s.partidos * 100),
-            pfAvg:      (s.pf / s.partidos).toFixed(1),
+            winPct:     Math.round(s.wins / s.matches * 100),
+            pfAvg:      (s.pf / s.matches).toFixed(1),
             scrumPct:   s.scrumTotal   ? Math.round(s.scrumWon   / s.scrumTotal   * 100) : null,
             lineoutPct: s.lineoutTotal ? Math.round(s.lineoutWon / s.lineoutTotal * 100) : null,
         }));
@@ -540,7 +540,7 @@ export default function Analysis() {
                                 {weatherCorrelation.map(w => (
                                     <tr key={w.condition} style={{ borderBottom: "1px solid #e5e7eb" }}>
                                         <td style={TD}>{w.condition}</td>
-                                        <td style={TD}>{w.partidos}</td>
+                                        <td style={TD}>{w.matches}</td>
                                         <td style={TD}>{w.winPct}%</td>
                                         <td style={TD}>{w.pfAvg}</td>
                                         <td style={TD}>{w.scrumPct   !== null ? `${w.scrumPct}%`   : "—"}</td>

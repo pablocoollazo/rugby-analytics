@@ -268,10 +268,10 @@ export default function Players() {
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={() => handleSaveEdit(p.id)} disabled={saving} style={{ fontSize: 13 }}>
-                      {saving ? "Guardando..." : "Guardar"}
+                      {saving ? "Saving..." : "Save"}
                     </button>
                     <button onClick={() => setEditingId(null)} style={{ fontSize: 13, background: "none" }}>
-                      Cancelar
+                      Cancel
                     </button>
                   </div>
                 </div>
@@ -296,18 +296,18 @@ export default function Players() {
                     {(role !== "player" || p.userId === user?.uid) && (
                       <button onClick={() => navigate(`/players/${p.id}`)}
                         style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#2563eb" }}>
-                        Ver perfil
+                        View profile
                       </button>
                     )}
                     {canEdit && (
                       <>
                         <button onClick={() => startEdit(p)}
                           style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#555" }}>
-                          Editar
+                          Edit
                         </button>
                         <button onClick={() => handleDelete(p.id)}
                           style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "red" }}>
-                          Borrar
+                          Delete
                         </button>
                       </>
                     )}

@@ -119,7 +119,7 @@ export default function Matches() {
                   {canEdit && (
                     <button onClick={() => handleDelete(m.id)}
                       style={{ color: "red", background: "none", border: "none", cursor: "pointer", fontSize: 13 }}>
-                      Borrar
+                      Delete
                     </button>
                   )}
                 </div>
