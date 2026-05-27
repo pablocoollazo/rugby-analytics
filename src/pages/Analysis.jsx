@@ -152,14 +152,16 @@ export default function Analysis() {
         Object.values(eventsMap).flat().forEach(ev => {
             if (ev.type !== "play") return;
             const key = ev.playbookId || ev.name;
-            if (!agg[key]) agg[key] = { name: ev.name, total: 0, try: 0, penalty: 0, turnover: 0, other: 0, players: {} };
+            if (!agg[key]) agg[key] = { name: ev.name, total: 0, try: 0, penalty: 0, turnover: 0, other: 0, tryPlayers: {} };
             const s = agg[key];
             s.total++;
             if (ev.result) s[ev.result] = (s[ev.result] || 0) + 1;
-            const bySlot = ev.playersBySlot || ev.playersByJersey || {};
-            Object.values(bySlot).forEach(pid => {
-                if (pid) s.players[pid] = (s.players[pid] || 0) + 1;
-            });
+            if (ev.result === "try") {
+                const bySlot = ev.playersBySlot || ev.playersByJersey || {};
+                Object.values(bySlot).forEach(pid => {
+                    if (pid) s.tryPlayers[pid] = (s.tryPlayers[pid] || 0) + 1;
+                });
+            }
         });
         return Object.values(agg).sort((a, b) => b.total - a.total);
     }, [eventsMap]);
@@ -168,10 +170,10 @@ export default function Analysis() {
     const myPlayAnalysis = useMemo(() => {
         if (!myPlayer) return [];
         return playAnalysis
-            .filter(play => (play.players[myPlayer.id] || 0) > 0)
+            .filter(play => (play.tryPlayers[myPlayer.id] || 0) > 0)
             .map(play => ({
                 name:     play.name,
-                appeared: play.players[myPlayer.id],
+                appeared: play.tryPlayers[myPlayer.id],
                 total:    play.total,
                 try:      play.try      || 0,
                 penalty:  play.penalty  || 0,
@@ -211,6 +213,47 @@ export default function Analysis() {
     }, [completed, eventsMap]);
 
     const hasWeather = weatherCorrelation.some(w => w.condition !== "No data");
+
+    // --- Stats by rival ---
+    const byRival = useMemo(() => {
+        const agg = {};
+        completed.forEach(m => {
+            const key = m.rival;
+            if (!agg[key]) agg[key] = {
+                rival: key, matches: 0, wins: 0, losses: 0, draws: 0, pf: 0, pa: 0,
+                scrumWon: 0, scrumOurs: 0, scrumStolen: 0,
+                lineoutWon: 0, lineoutOurs: 0, lineoutStolen: 0,
+                ruckLost: 0,
+                tackleWon: 0, tackleLost: 0, tackleMissed: 0,
+                tries: 0, playsTotal: 0, playsTry: 0,
+            };
+            const s = agg[key];
+            s.matches++;
+            if (m.result === "Win")  s.wins++;
+            if (m.result === "Loss") s.losses++;
+            if (m.result === "Draw") s.draws++;
+            s.pf += m.pointsFor  || 0;
+            s.pa += m.pointsAgainst || 0;
+            (eventsMap[m.id] || []).forEach(ev => {
+                if (ev.type === "scrum_won")    { s.scrumWon++;  s.scrumOurs++; }
+                if (ev.type === "scrum_lost")   s.scrumOurs++;
+                if (ev.type === "scrum_stolen") s.scrumStolen++;
+                if (ev.type === "lineout_won")  { s.lineoutWon++; s.lineoutOurs++; }
+                if (ev.type === "lineout_lost") s.lineoutOurs++;
+                if (ev.type === "lineout_stolen") s.lineoutStolen++;
+                if (ev.type === "ruck_lost")    s.ruckLost++;
+                if (ev.type === "tackle_won")   s.tackleWon++;
+                if (ev.type === "tackle_lost")  s.tackleLost++;
+                if (ev.type === "tackle_missed") s.tackleMissed++;
+                if (ev.type === "try")          s.tries++;
+                if (ev.type === "play") {
+                    s.playsTotal++;
+                    if (ev.result === "try") s.playsTry++;
+                }
+            });
+        });
+        return Object.values(agg).sort((a, b) => b.matches - a.matches);
+    }, [completed, eventsMap]);
 
     if (loading) return <p style={{ padding: 40 }}>Loading stats...</p>;
     if (completed.length === 0) return <p style={{ padding: 40 }}>No completed matches yet.</p>;
@@ -452,7 +495,7 @@ export default function Analysis() {
                                     <th style={TH}>Try %</th>
                                     <th style={TH}>Penalty %</th>
                                     <th style={TH}>Turnover %</th>
-                                    <th style={TH}>Top players</th>
+                                    <th style={TH}>Try scorers</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -460,7 +503,7 @@ export default function Analysis() {
                                     const tryPct      = Math.round((play.try      || 0) / play.total * 100);
                                     const penaltyPct  = Math.round((play.penalty  || 0) / play.total * 100);
                                     const turnoverPct = Math.round((play.turnover || 0) / play.total * 100);
-                                    const topPlayers  = Object.entries(play.players)
+                                    const tryScorers  = Object.entries(play.tryPlayers)
                                         .sort(([, a], [, b]) => b - a)
                                         .slice(0, 3)
                                         .map(([pid, n]) => {
@@ -476,7 +519,7 @@ export default function Analysis() {
                                             <td style={{ ...TD, color: tryPct >= 50 ? "#16a34a" : undefined }}>{tryPct}%</td>
                                             <td style={TD}>{penaltyPct}%</td>
                                             <td style={{ ...TD, color: turnoverPct >= 40 ? "#dc2626" : undefined }}>{turnoverPct}%</td>
-                                            <td style={{ ...TD, fontSize: 11, color: "#555" }}>{topPlayers || "—"}</td>
+                                            <td style={{ ...TD, fontSize: 11, color: "#555" }}>{tryScorers || "—"}</td>
                                         </tr>
                                     );
                                 })}
@@ -515,6 +558,58 @@ export default function Analysis() {
                                         </tr>
                                     );
                                 })}
+                            </tbody>
+                        </table>
+                    </div>
+                </Section>
+            )}
+
+            {/* Stats by rival */}
+            {byRival.length > 0 && (
+                <Section title="Stats by opponent">
+                    <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse", whiteSpace: "nowrap" }}>
+                            <thead>
+                                <tr style={{ background: "#e5e7eb", textAlign: "left" }}>
+                                    <th style={TH}>Opponent</th>
+                                    <th style={TH}>P</th>
+                                    <th style={TH}>W</th>
+                                    <th style={TH}>L</th>
+                                    <th style={TH}>D</th>
+                                    <th style={TH}>Score avg</th>
+                                    <th style={TH}>Tries</th>
+                                    <th style={TH}>Scrum W%</th>
+                                    <th style={TH}>Scrum stolen</th>
+                                    <th style={TH}>Line-out W%</th>
+                                    <th style={TH}>Line-out stolen</th>
+                                    <th style={TH}>Rucks lost</th>
+                                    <th style={TH}>Tackles W/L/M</th>
+                                    <th style={TH}>Plays (try%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {byRival.map(r => (
+                                    <tr key={r.rival} style={{ borderBottom: "1px solid #e5e7eb" }}>
+                                        <td style={TD}><strong>{r.rival}</strong></td>
+                                        <td style={TD}>{r.matches}</td>
+                                        <td style={{ ...TD, color: r.wins > 0 ? "#16a34a" : undefined, fontWeight: r.wins > 0 ? 600 : 400 }}>{r.wins}</td>
+                                        <td style={{ ...TD, color: r.losses > 0 ? "#dc2626" : undefined }}>{r.losses}</td>
+                                        <td style={TD}>{r.draws || "—"}</td>
+                                        <td style={{ ...TD, color: "var(--muted)" }}>
+                                            {(r.pf / r.matches).toFixed(1)} – {(r.pa / r.matches).toFixed(1)}
+                                        </td>
+                                        <td style={TD}>{r.tries || "—"}</td>
+                                        <td style={TD}>{r.scrumOurs > 0 ? `${Math.round(r.scrumWon / r.scrumOurs * 100)}%` : "—"}</td>
+                                        <td style={TD}>{r.scrumStolen || "—"}</td>
+                                        <td style={TD}>{r.lineoutOurs > 0 ? `${Math.round(r.lineoutWon / r.lineoutOurs * 100)}%` : "—"}</td>
+                                        <td style={TD}>{r.lineoutStolen || "—"}</td>
+                                        <td style={TD}>{r.ruckLost || "—"}</td>
+                                        <td style={TD}>{r.tackleWon + r.tackleLost + r.tackleMissed > 0
+                                            ? `${r.tackleWon}/${r.tackleLost}/${r.tackleMissed}` : "—"}</td>
+                                        <td style={TD}>{r.playsTotal > 0
+                                            ? `${r.playsTotal} (${Math.round(r.playsTry / r.playsTotal * 100)}%)` : "—"}</td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
