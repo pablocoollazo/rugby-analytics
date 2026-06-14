@@ -1,7 +1,7 @@
 export async function geocodeCity(city) {
     try {
         const res = await fetch(
-            `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=es&format=json`
+            `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`
         );
         const data = await res.json();
         if (!data.results?.length) return null;
@@ -39,11 +39,11 @@ export async function fetchMatchWeather(lat, lon, date) {
         const rain    = data.daily.precipitation_sum[0];
         const wind    = data.daily.wind_speed_10m_max[0];
 
-        let condition = "Despejado";
-        if (rain > 5)       condition = "Lluvia";
-        else if (rain > 1)  condition = "Llovizna";
-        else if (wind > 40) condition = "Viento fuerte";
-        else if (wind > 25) condition = "Ventoso";
+        let condition = "Clear";
+        if (rain > 5)       condition = "Rain";
+        else if (rain > 1)  condition = "Drizzle";
+        else if (wind > 40) condition = "Strong wind";
+        else if (wind > 25) condition = "Windy";
 
         return { temp, tempMin, rain, wind, condition };
     } catch {
