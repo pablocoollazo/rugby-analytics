@@ -87,6 +87,12 @@ export default function MatchDetails() {
         const updated = { ...(docStats || {}), squad };
         await setStats(id, updated);
         setDocStats(updated);
+        const starters = squad.filter(s => s.isStarter !== false);
+        if (starters.length < 15) {
+            notify("Squad saved", `${starters.length}/15 players — formation incomplete.`);
+        } else {
+            notify("Squad saved", `Full squad confirmed for vs ${match?.rival}.`);
+        }
     }
 
     const canEdit = role === "admin" || role === "coach";
