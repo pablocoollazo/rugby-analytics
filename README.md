@@ -16,6 +16,7 @@ Web application for live rugby match tracking and season analytics. Built with R
 - **Season analysis** — points progression, individual player stats, set play analysis, stats by opponent, weather correlation
 - **Role-based access** — admin, coach and player roles with different views and permissions
 - **PWA** — installable on mobile, service worker with runtime caching
+- **Notifications** — Web Notifications API: squad saved (with incomplete formation warning), match closed
 
 ---
 
