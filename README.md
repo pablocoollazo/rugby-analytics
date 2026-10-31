@@ -4,8 +4,6 @@ Web application for live rugby match tracking and season analytics. Built with R
 
 **Live app:** https://rugby-analytics-8d187.web.app
 
-**Repository:** https://github.com/pablocoollazo/applicazioni-web
-
 ---
 
 ## Features
@@ -39,17 +37,17 @@ Web application for live rugby match tracking and season analytics. Built with R
 ### Prerequisites
 
 - Node.js 18+
-- A Firebase project (or use the `.env` provided)
+- A Firebase project (Auth and Firestore enabled)
 
 ### Setup
 
 ```bash
-git clone https://github.com/pablocoollazo/applicazioni-web.git
-cd applicazioni-web
+git clone https://github.com/pablocoollazo/rugby-analytics.git
+cd rugby-analytics
 npm install
 ```
 
-Create a `.env` file in the project root (see `.env` attached to the submission email):
+Create a `.env` file in the project root with your Firebase config:
 
 ```
 VITE_FIREBASE_API_KEY=...
@@ -65,34 +63,6 @@ npm run dev
 ```
 
 The app runs at `http://localhost:5173`.
-
----
-
-## Test accounts
-
-The following accounts are pre-loaded with sample data (club: **Test RFC**):
-
-| Role | Email | Password |
-|---|---|---|
-| Admin | admin@test.com | Test1234! |
-| Coach | coach@test.com | Test1234! |
-| Player | player@test.com | Test1234! |
-
-### What to try
-
-**As admin (`admin@test.com`):**
-- `/club` — member management and access codes
-- `/players` — squad with Thrower/Kicker badges
-- `/playbook` — club play library
-- `/analysis` — full season breakdown, play analysis and stats by opponent
-
-**As coach (`coach@test.com`):**
-- Open any match — tabs: Match (live score + set pieces), Squad, Players (per-player events), Plays (set plays)
-- Score tab: record a try (+5 → select scorer → Confirm) or a kick (+2/+3 → Made ✓ / Missed ✗)
-
-**As player (`player@test.com`):**
-- Home shows "My profile" quicklink instead of Players/Playbook
-- Analysis shows personal stats and "My set plays" section
 
 ---
 
