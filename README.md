@@ -2,6 +2,8 @@
 
 Web application for live rugby match tracking and season analytics. Built with React + Firebase as a Progressive Web App (PWA).
 
+Built as a course project during my Erasmus year at Università di Pisa.
+
 **Live app:** https://rugby-analytics-8d187.web.app
 
 ---
