@@ -15,8 +15,21 @@ Built as a course project during my Erasmus year at Università di Pisa.
 - **Playbook** — club-level play library linked to position slots; auto-fills squad for each match
 - **Season analysis** — points progression, individual player stats, set play analysis, stats by opponent, weather correlation
 - **Role-based access** — admin, coach and player roles with different views and permissions
-- **PWA** — installable on mobile, service worker with runtime caching
+- **PWA** — installable on mobile, app shell precached by a service worker
 - **Notifications** — Web Notifications API: squad saved (with incomplete formation warning), match closed
+
+---
+
+## Architecture
+
+```
+React PWA (Firebase Hosting)
+  ├── Firebase Auth     sign-in
+  ├── Firestore         clubs, matches, events, players, playbook
+  └── Open-Meteo API    match weather
+```
+
+There is no custom backend. The client subscribes to Firestore in real time, stores each match action as an event and derives the statistics from those events. Firestore security rules are not versioned in this repository.
 
 ---
 
@@ -38,7 +51,7 @@ Built as a course project during my Erasmus year at Università di Pisa.
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.19+
 - A Firebase project (Auth and Firestore enabled)
 
 ### Setup
@@ -65,6 +78,13 @@ npm run dev
 ```
 
 The app runs at `http://localhost:5173`.
+
+Other commands:
+
+```bash
+npm run lint    # run ESLint
+npm run build   # build to dist/, served by Firebase Hosting
+```
 
 ---
 
